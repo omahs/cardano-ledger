@@ -69,7 +69,6 @@ import qualified Data.Sequence.Strict as StrictSeq
 import qualified Data.Set as Set
 import qualified Data.Vector as V
 import Debug.Trace (trace)
-import GHC.Records (HasField (..))
 import Lens.Micro
 import NoThunks.Class ()
 import Test.Cardano.Ledger.Core.KeyPair (
@@ -97,7 +96,7 @@ import Test.Cardano.Ledger.Shelley.Generator.EraGen (EraGen (..))
 import Test.Cardano.Ledger.Shelley.Generator.ScriptClass (scriptKeyCombination)
 import Test.Cardano.Ledger.Shelley.Generator.Trace.DCert (CERTS, genDCerts)
 import Test.Cardano.Ledger.Shelley.Generator.Update (genUpdate)
-import Test.Cardano.Ledger.Shelley.Utils (Split (..))
+import Test.Cardano.Ledger.Shelley.Utils (ShelleyTest, Split (..))
 import Test.QuickCheck (Gen, discard)
 import qualified Test.QuickCheck as QC
 
@@ -133,6 +132,7 @@ genTx ::
   , Environment (EraRule "DELPL" era) ~ DelplEnv era
   , State (EraRule "DELPL" era) ~ DPState (EraCrypto era)
   , Signal (EraRule "DELPL" era) ~ DCert (EraCrypto era)
+  , ShelleyTest era
   ) =>
   GenEnv era ->
   LedgerEnv era ->
@@ -224,7 +224,7 @@ genTx
 
       -- Occasionally we have a transaction generated with insufficient inputs
       -- to cover the deposits. In this case we discard the test case.
-      let enough = length outputAddrs <×> getField @"_minUTxOValue" pparams
+      let enough = length outputAddrs <×> pparams ^. ppMinUTxOValueL
       !_ <- when (coin spendingBalance < coin enough) (myDiscard "No inputs left. Utxo.hs")
 
       -------------------------------------------------------------------------
@@ -326,7 +326,7 @@ encodedLen x = fromIntegral $ BSL.length (serialize (eraProtVerHigh @era) x)
 -- transaction so that it will balance.
 genNextDelta ::
   forall era.
-  (EraGen era, Mock (EraCrypto era)) =>
+  (EraGen era, Mock (EraCrypto era), ShelleyTest era) =>
   ScriptInfo era ->
   UTxO era ->
   PParams era ->
@@ -364,11 +364,11 @@ genNextDelta
         deltaScriptCost = foldr accum (Coin 0) extraScripts
           where
             accum (s1, _) ans = genEraScriptCost @era pparams s1 <+> ans
-        deltaFee = (draftSize <×> Coin (fromIntegral (getField @"_minfeeA" pparams))) <+> deltaScriptCost
+        deltaFee = (draftSize <×> Coin (fromIntegral (pparams ^. ppMinFeeAL))) <+> deltaScriptCost
         totalFee = baseTxFee <+> deltaFee :: Coin
         remainingFee = totalFee <-> dfees :: Coin
         changeAmount = getChangeAmount change
-        minAda = getField @"_minUTxOValue" pparams
+        minAda = pparams ^. ppMinUTxOValueL
      in if remainingFee <= Coin 0 -- we've paid for all the fees
           then pure delta -- we're done
           else -- the change covers what we need, so shift Coin from change to dfees.
@@ -445,6 +445,7 @@ genNextDeltaTilFixPoint ::
   forall era.
   ( EraGen era
   , Mock (EraCrypto era)
+  , ShelleyTest era
   ) =>
   ScriptInfo era ->
   Coin ->
@@ -460,7 +461,7 @@ genNextDeltaTilFixPoint scriptinfo initialfee keys scripts utxo pparams keySpace
   fix
     0
     (genNextDelta scriptinfo utxo pparams keySpace tx)
-    (deltaZero initialfee (safetyOffset <+> getField @"_minUTxOValue" pparams) (head addr))
+    (deltaZero initialfee (safetyOffset <+> pparams ^. ppMinUTxOValueL) (head addr))
   where
     -- add a small offset here to ensure outputs above minUtxo value
     safetyOffset = Coin 5
@@ -525,6 +526,7 @@ fix n f d = do d1 <- f n d; if d1 == d then pure d else fix (n + 1) f d1
 
 converge ::
   forall era.
+  ShelleyTest era =>
   (EraGen era, Mock (EraCrypto era)) =>
   ScriptInfo era ->
   Coin ->

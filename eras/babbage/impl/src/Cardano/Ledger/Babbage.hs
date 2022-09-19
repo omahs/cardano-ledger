@@ -15,18 +15,17 @@ module Cardano.Ledger.Babbage (
   BabbageTxBody,
   AlonzoScript,
   AlonzoTxAuxData,
-  BabbagePParams,
-  BabbagePParamsUpdate,
 )
 where
 
 import Cardano.Ledger.Alonzo (reapplyAlonzoTx)
+import Cardano.Ledger.Alonzo.Genesis (AlonzoGenesis (..))
 import Cardano.Ledger.Alonzo.Scripts (AlonzoScript (..))
 import Cardano.Ledger.Alonzo.TxAuxData (AlonzoTxAuxData (..))
 import Cardano.Ledger.Alonzo.TxInfo (ExtendedUTxO (..))
+import Cardano.Ledger.Babbage.Core
 import Cardano.Ledger.Babbage.Era (BabbageEra)
-import Cardano.Ledger.Babbage.Genesis (AlonzoGenesis, extendPPWithGenesis)
-import Cardano.Ledger.Babbage.PParams (BabbagePParams, BabbagePParamsHKD (..), BabbagePParamsUpdate)
+import Cardano.Ledger.Babbage.PParams ()
 import Cardano.Ledger.Babbage.Rules ()
 import Cardano.Ledger.Babbage.Translation ()
 import Cardano.Ledger.Babbage.Tx (
@@ -34,16 +33,13 @@ import Cardano.Ledger.Babbage.Tx (
   getDatumBabbage,
  )
 import Cardano.Ledger.Babbage.TxBody (
-  BabbageEraTxBody (..),
   BabbageTxBody,
   BabbageTxOut,
-  dataHashTxOutL,
  )
 import Cardano.Ledger.Babbage.TxInfo (babbageTxInfo)
 import Cardano.Ledger.Babbage.UTxO ()
 import Cardano.Ledger.Binary (sizedValue)
 import Cardano.Ledger.Crypto (Crypto, StandardCrypto)
-import Cardano.Ledger.Hashes (EraIndependentTxBody)
 import Cardano.Ledger.Keys (DSignable, Hash)
 import qualified Cardano.Ledger.Shelley.API as API
 import Cardano.Ledger.UTxO (UTxO (..))
@@ -65,7 +61,8 @@ instance (Crypto c, DSignable c (Hash c EraIndependentTxBody)) => API.ApplyBlock
 instance Crypto c => API.CanStartFromGenesis (BabbageEra c) where
   type AdditionalGenesisConfig (BabbageEra c) = AlonzoGenesis
 
-  initialState = API.initialStateFromGenesis extendPPWithGenesis
+  fromShelleyPParams (AlonzoGenesisWrapper upgradeArgs) =
+    upgradePParams () . upgradePParams upgradeArgs . upgradePParams () . upgradePParams ()
 
 instance Crypto c => ExtendedUTxO (BabbageEra c) where
   txInfo = babbageTxInfo

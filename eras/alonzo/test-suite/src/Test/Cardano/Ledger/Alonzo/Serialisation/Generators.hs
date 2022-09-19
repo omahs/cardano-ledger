@@ -82,7 +82,7 @@ import Data.Maybe (catMaybes)
 import qualified Data.Set as Set
 import Data.Text (pack)
 import Data.Typeable (Typeable)
-import GHC.Records (HasField)
+import Data.Void (Void)
 import Numeric.Natural (Natural)
 import qualified PlutusLedgerApi.V1 as PV1
 import Test.Cardano.Ledger.Alonzo.AlonzoEraGen (costModelParamsCount)
@@ -381,7 +381,6 @@ instance
   ( EraPParams era
   , Mock (EraCrypto era)
   , Arbitrary (PParams era)
-  , HasField "_costmdls" (PParams era) CostModels
   ) =>
   Arbitrary (ScriptIntegrity era)
   where

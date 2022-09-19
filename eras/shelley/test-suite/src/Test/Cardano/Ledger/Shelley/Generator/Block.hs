@@ -16,10 +16,9 @@ where
 
 import qualified Cardano.Crypto.VRF as VRF
 import Cardano.Ledger.BaseTypes (UnitInterval)
-import qualified Cardano.Ledger.Core as Core
 import Cardano.Ledger.Crypto (VRF)
-import Cardano.Ledger.Era (EraCrypto)
 import Cardano.Ledger.Shelley.API hiding (vKey)
+import Cardano.Ledger.Shelley.Core
 import Cardano.Ledger.Slot (SlotNo (..))
 import Cardano.Protocol.TPraos.API
 import Cardano.Protocol.TPraos.BHeader (
@@ -44,7 +43,7 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Sequence (Seq)
 import qualified Data.Set as Set
-import GHC.Records (HasField (getField))
+import Lens.Micro ((^.))
 import Test.Cardano.Ledger.Core.KeyPair (vKey)
 import Test.Cardano.Ledger.Shelley.ConcreteCryptoTypes (
   Mock,
@@ -61,6 +60,7 @@ import Test.Cardano.Ledger.Shelley.Generator.EraGen (EraGen (..), MinLEDGER_STS)
 import Test.Cardano.Ledger.Shelley.Generator.Trace.Ledger ()
 import Test.Cardano.Ledger.Shelley.Rules.Chain (ChainState (..))
 import Test.Cardano.Ledger.Shelley.Utils (
+  ShelleyTest,
   epochFromSlotNo,
   maxKESIterations,
   runShelleyBase,
@@ -74,11 +74,11 @@ import qualified Test.QuickCheck as QC (choose)
 
 -- | Type alias for a transaction generator
 type TxGen era =
-  Core.PParams era ->
+  PParams era ->
   AccountState ->
   LedgerState era ->
   SlotNo ->
-  Gen (Seq (Core.Tx era))
+  Gen (Seq (Tx era))
 
 -- | Generate a valid block.
 genBlock ::
@@ -87,8 +87,9 @@ genBlock ::
   , ApplyBlock era
   , Mock (EraCrypto era)
   , GetLedgerView era
-  , QC.HasTrace (Core.EraRule "LEDGERS" era) (GenEnv era)
+  , QC.HasTrace (EraRule "LEDGERS" era) (GenEnv era)
   , EraGen era
+  , ShelleyTest era
   ) =>
   GenEnv era ->
   ChainState era ->
@@ -98,7 +99,7 @@ genBlock ge = genBlockWithTxGen genTxs ge
     genTxs :: TxGen era
     genTxs pp reserves ls s = do
       let ledgerEnv = LedgersEnv @era s pp reserves
-      block <- sigGen @(Core.EraRule "LEDGERS" era) ge ledgerEnv ls
+      block <- sigGen @(EraRule "LEDGERS" era) ge ledgerEnv ls
       genEraTweakBlock @era pp block
 
 genBlockWithTxGen ::
@@ -107,6 +108,7 @@ genBlockWithTxGen ::
   , GetLedgerView era
   , ApplyBlock era
   , EraGen era
+  , ShelleyTest era
   ) =>
   TxGen era ->
   GenEnv era ->
@@ -234,8 +236,8 @@ selectNextSlotWithLeader
           (GenDelegs cores) = (dsGenDelegs . dpsDState) dpstate
           firstEpochSlot = slotFromEpoch (epochFromSlotNo slotNo)
           f = activeSlotCoeff testGlobals
-          getUnitInterval :: Core.PParams era -> UnitInterval
-          getUnitInterval pp = getField @"_d" pp
+          getUnitInterval :: PParams era -> UnitInterval
+          getUnitInterval pp = pp ^. ppDG
           d = (getUnitInterval . esPp . nesEs . chainNes) chainSt
 
           isLeader poolHash vrfKey =

@@ -32,7 +32,7 @@ where
 
 import qualified Cardano.Crypto.Hash as Hash
 import Cardano.Ledger.AuxiliaryData (AuxiliaryDataHash)
-import Cardano.Ledger.BaseTypes (Network (..), ProtVer, ShelleyBase, StrictMaybe, UnitInterval)
+import Cardano.Ledger.BaseTypes (Network (..), ShelleyBase, StrictMaybe)
 import Cardano.Ledger.Binary (ToCBOR (..), serializeEncoding', shelleyProtVer)
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core
@@ -53,7 +53,6 @@ import Cardano.Ledger.Shelley.LedgerState (StashedAVVMAddresses, UTxOState (..))
 import Cardano.Ledger.Shelley.PParams (Update)
 import Cardano.Ledger.Shelley.Rules (UtxoEnv)
 import Cardano.Ledger.Shelley.TxBody (DCert, ShelleyEraTxBody, Wdrl, WitVKey)
-import Cardano.Ledger.Slot (EpochNo)
 import Cardano.Ledger.TxIn (TxId (TxId), TxIn)
 import Cardano.Ledger.UTxO (UTxO)
 import Cardano.Protocol.TPraos.BHeader (BHeader)
@@ -65,8 +64,6 @@ import Data.Map (Map)
 import Data.Sequence (Seq)
 import Data.Sequence.Strict (StrictSeq)
 import Data.Set (Set)
-import GHC.Natural (Natural)
-import GHC.Records (HasField (..))
 import Lens.Micro
 import Test.Cardano.Ledger.Binary.Random (mkDummyHash)
 import Test.Cardano.Ledger.Core.KeyPair (KeyPairs, mkAddr)
@@ -85,7 +82,7 @@ import Test.Cardano.Ledger.Shelley.Generator.ScriptClass (
   keyPairs,
  )
 import Test.Cardano.Ledger.Shelley.Rules.Chain (CHAIN, ChainState)
-import Test.Cardano.Ledger.Shelley.Utils (Split (..))
+import Test.Cardano.Ledger.Shelley.Utils (Split)
 import Test.QuickCheck (Gen, choose, shuffle)
 
 {------------------------------------------------------------------------------
@@ -156,15 +153,6 @@ type MinUTXO_STS era =
 type MinGenPParams era =
   ( EraPParams era
   , Default (PParams era)
-  , HasField "_minPoolCost" (PParams era) Coin
-  , HasField "_protocolVersion" (PParams era) ProtVer
-  , HasField "_eMax" (PParams era) EpochNo
-  , HasField "_d" (PParams era) UnitInterval
-  , HasField "_keyDeposit" (PParams era) Coin
-  , HasField "_poolDeposit" (PParams era) Coin
-  , HasField "_minfeeA" (PParams era) Natural
-  , HasField "_minUTxOValue" (PParams era) Coin
-  , HasField "_minfeeB" (PParams era) Natural
   )
 
 class Show (TxOut era) => MinGenTxout era where

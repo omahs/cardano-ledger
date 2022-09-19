@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Test.Cardano.Ledger.Shelley.Serialisation.Golden.Genesis (
@@ -21,13 +22,12 @@ import Cardano.Ledger.Binary (
   serializeEncoding',
   shelleyProtVer,
  )
-import Cardano.Ledger.Crypto (HASH)
-import Cardano.Ledger.Era (EraCrypto (..))
+import Cardano.Ledger.Core (emptyPParams, ppDL, ppMaxBBSizeL, ppMaxBHSizeL)
+import Cardano.Ledger.Crypto (Crypto (HASH), StandardCrypto)
 import Cardano.Ledger.Keys (hashKey, hashVerKeyVRF)
-import Cardano.Ledger.Shelley (Shelley)
+import Cardano.Ledger.Shelley (ShelleyEra)
 import qualified Cardano.Ledger.Shelley.API as L
 import Cardano.Ledger.Shelley.Genesis
-import Cardano.Ledger.Shelley.PParams (ShelleyPParamsHKD (..), emptyPParams)
 import Cardano.Slotting.Slot (EpochSize (..))
 import Control.Monad
 import Data.Aeson hiding (Encoding)
@@ -39,6 +39,7 @@ import Data.Scientific (Scientific)
 import qualified Data.Sequence.Strict as StrictSeq
 import qualified Data.Set as Set
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
+import Lens.Micro
 import Paths_cardano_ledger_shelley_test (getDataFileName)
 import Test.Cardano.Ledger.Binary.TreeDiff (CBORBytes (CBORBytes), diffExpr)
 import Test.Cardano.Ledger.Core.KeyPair (vKey)
@@ -64,7 +65,7 @@ golden_json_ShelleyGenesis :: Assertion
 golden_json_ShelleyGenesis =
   goldenTestJSON example =<< getDataFileName "test/Golden/ShelleyGenesis"
   where
-    example :: ShelleyGenesis Shelley
+    example :: ShelleyGenesis StandardCrypto
     example = exampleShelleyGenesis
 
 golden_cbor_ShelleyGenesis :: Assertion
@@ -73,7 +74,7 @@ golden_cbor_ShelleyGenesis =
     assertFailure
       (diffExpr (CBORBytes expected) (CBORBytes received))
   where
-    example :: ShelleyGenesis Shelley
+    example :: ShelleyGenesis StandardCrypto
     example = exampleShelleyGenesis
 
     received = serializeEncoding' shelleyProtVer (toCBOR expectedTokens)
@@ -192,9 +193,9 @@ tests =
     ]
 
 exampleShelleyGenesis ::
-  forall era.
-  Era era =>
-  ShelleyGenesis era
+  forall c.
+  Crypto c =>
+  ShelleyGenesis c
 exampleShelleyGenesis =
   ShelleyGenesis
     { sgSystemStart = posixSecondsToUTCTime $ realToFrac (1234566789 :: Integer)
@@ -209,26 +210,25 @@ exampleShelleyGenesis =
     , sgUpdateQuorum = 16991
     , sgMaxLovelaceSupply = 71
     , sgProtocolParams =
-        emptyPParams
-          { _d = unsafeBoundRational $ realToFrac (1.9e-2 :: Scientific)
-          , _maxBBSize = 239857
-          , _maxBHSize = 217569
-          }
+        emptyPParams @(ShelleyEra c)
+          & ppDL .~ unsafeBoundRational (realToFrac (1.9e-2 :: Scientific))
+          & ppMaxBBSizeL .~ 239857
+          & ppMaxBHSizeL .~ 217569
     , sgGenDelegs = Map.fromList [(genesisVerKeyHash, genDelegPair)]
     , sgInitialFunds = LM.ListMap [(initialFundedAddress, initialFunds)]
     , sgStaking = staking
     }
   where
     -- hash of the genesis verification key
-    genesisVerKeyHash :: L.KeyHash 'L.Genesis (EraCrypto era)
+    genesisVerKeyHash :: L.KeyHash 'L.Genesis c
     genesisVerKeyHash = L.KeyHash "38e7c5986a34f334e19b712c0aa525146dab8f0ff889b2ad16894241"
     -- hash of the delegators verififation key
     genDelegPair = L.GenDelegPair delegVerKeyHash delegVrfKeyHash
-    delegVerKeyHash :: L.KeyHash 'L.GenesisDelegate (EraCrypto era)
+    delegVerKeyHash :: L.KeyHash 'L.GenesisDelegate c
     delegVerKeyHash = L.KeyHash "e6960dd671ee8d73de1a83d1345b661165dcddeba99623beef2f157a"
-    delegVrfKeyHash :: Hash.Hash (HASH (EraCrypto era)) (L.VerKeyVRF (EraCrypto era))
+    delegVrfKeyHash :: Hash.Hash (HASH c) (L.VerKeyVRF c)
     delegVrfKeyHash = "fce31c6f3187531ee4a39aa743c24d22275f415a8895e9cd22c30c8a25cdef0d"
-    initialFundedAddress :: L.Addr (EraCrypto era)
+    initialFundedAddress :: L.Addr c
     initialFundedAddress =
       L.Addr
         L.Testnet
@@ -254,7 +254,7 @@ exampleShelleyGenesis =
         , L.SingleHostName L.SNothing (fromJust $ textToDns "cool.domain.com")
         , L.MultiHostName (fromJust $ textToDns "cool.domain.com")
         ]
-    poolParams :: L.PoolParams (EraCrypto era)
+    poolParams :: L.PoolParams c
     poolParams =
       L.PoolParams
         { L.ppId = hashKey . snd $ mkKeyPair (RawSeed 1 0 0 0 1)

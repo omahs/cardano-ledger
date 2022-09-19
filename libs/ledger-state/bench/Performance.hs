@@ -7,10 +7,10 @@
 module Main where
 
 import Cardano.Ledger.Address
-import Cardano.Ledger.Alonzo.PParams hiding (PParams)
 import Cardano.Ledger.BaseTypes
 import Cardano.Ledger.Binary
 import Cardano.Ledger.Core
+import Cardano.Ledger.PParams
 import Cardano.Ledger.Shelley.API.Mempool
 import Cardano.Ledger.Shelley.API.Wallet (getFilteredUTxO, getUTxO)
 import Cardano.Ledger.Shelley.Genesis (ShelleyGenesis (..), fromNominalDiffTimeMicro, mkShelleyGlobals)
@@ -216,7 +216,7 @@ mkGlobals :: ShelleyGenesis CurrentEra -> PParams CurrentEra -> Globals
 mkGlobals genesis pp =
   mkShelleyGlobals genesis epochInfoE majorPParamsVer
   where
-    majorPParamsVer = pvMajor $ _protocolVersion pp
+    majorPParamsVer = pvMajor $ pp ^. ppProtocolVersionL
     epochInfoE =
       fixedEpochInfo
         (sgEpochLength genesis)

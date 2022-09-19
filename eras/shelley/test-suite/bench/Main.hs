@@ -23,13 +23,13 @@ import Cardano.Crypto.VRF.Praos
 import Cardano.Ledger.Coin (Coin (..))
 import qualified Cardano.Ledger.Crypto as CryptoClass
 import qualified Cardano.Ledger.EpochBoundary as EB
-import Cardano.Ledger.Era (EraCrypto)
 import Cardano.Ledger.Shelley (ShelleyEra)
 import Cardano.Ledger.Shelley.Bench.Gen (
   genBlock,
   genTriple,
  )
 import Cardano.Ledger.Shelley.Bench.Rewards (createRUpd, createRUpdWithProv, genChainInEpoch)
+import Cardano.Ledger.Shelley.Core
 import Cardano.Ledger.Shelley.LedgerState (
   DPState (..),
   DState (..),
@@ -39,7 +39,6 @@ import Cardano.Ledger.Shelley.LedgerState (
   incrementalStakeDistr,
   updateStakeDistribution,
  )
-import Cardano.Ledger.Shelley.PParams (ShelleyPParamsHKD (..))
 import Cardano.Ledger.Shelley.PoolRank (likelihood)
 import Cardano.Ledger.UTxO (UTxO)
 import Cardano.Protocol.TPraos.API (PraosCrypto)
@@ -376,7 +375,6 @@ varyDelegState tag fixed changes initstate action =
 -- =============================================================================
 
 main :: IO ()
--- main=profileValid
 main = do
   (genenv, chainstate, genTxfun) <- genTriple (Proxy :: Proxy BenchEra) 1000
   defaultMain

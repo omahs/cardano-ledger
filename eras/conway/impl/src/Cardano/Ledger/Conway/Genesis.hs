@@ -4,11 +4,9 @@
 
 module Cardano.Ledger.Conway.Genesis (
   ConwayGenesis (..),
-  extendPPWithGenesis,
 )
 where
 
-import Cardano.Ledger.Babbage.Genesis (extendPPWithGenesis)
 import Cardano.Ledger.Binary (FromCBOR (..), ToCBOR (..))
 import Cardano.Ledger.Crypto (Crypto)
 import Cardano.Ledger.Keys (GenDelegs (..))

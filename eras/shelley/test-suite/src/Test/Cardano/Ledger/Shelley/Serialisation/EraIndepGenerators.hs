@@ -28,15 +28,10 @@ import Cardano.Ledger.BaseTypes (
   SlotNo (..),
  )
 import Cardano.Ledger.Coin (CompactForm (..))
-import Cardano.Ledger.Core (
-  Era,
-  EraCrypto,
-  EraScript (..),
-  EraSegWits (..),
- )
-import qualified Cardano.Ledger.Core as Core
 import Cardano.Ledger.Crypto (Crypto, DSIGN)
+import Cardano.Ledger.Shelley (ShelleyEra)
 import Cardano.Ledger.Shelley.API hiding (SignedDSIGN)
+import Cardano.Ledger.Shelley.Core
 import Cardano.Ledger.Shelley.LedgerState (FutureGenDeleg, StashedAVVMAddresses)
 import Cardano.Ledger.Shelley.PoolRank (
   Likelihood (..),
@@ -189,7 +184,7 @@ maxTxWits :: Int
 maxTxWits = 5
 
 instance
-  (Core.EraTxOut era, Mock (EraCrypto era), Arbitrary (Core.Value era)) =>
+  (EraTxOut era, Mock (EraCrypto era), Arbitrary (Value era)) =>
   Arbitrary (ShelleyTxOut era)
   where
   arbitrary = ShelleyTxOut <$> arbitrary <*> arbitrary
@@ -282,10 +277,10 @@ instance Crypto c => Arbitrary (DPState c) where
   shrink = genericShrink
 
 instance
-  ( Core.EraTxOut era
+  ( EraTxOut era
   , Mock (EraCrypto era)
-  , Arbitrary (Core.TxOut era)
-  , Arbitrary (State (Core.EraRule "PPUP" era))
+  , Arbitrary (TxOut era)
+  , Arbitrary (State (EraRule "PPUP" era))
   ) =>
   Arbitrary (UTxOState era)
   where
@@ -309,10 +304,10 @@ instance Crypto c => Arbitrary (IncrementalStake c) where
 -- > instance OVERLAPPING_ GSubtermsIncl (K1 i a) b where
 
 instance
-  ( Core.EraTxOut era
+  ( EraTxOut era
   , Mock (EraCrypto era)
-  , Arbitrary (Core.TxOut era)
-  , Arbitrary (State (Core.EraRule "PPUP" era))
+  , Arbitrary (TxOut era)
+  , Arbitrary (State (EraRule "PPUP" era))
   ) =>
   Arbitrary (LedgerState era)
   where
@@ -320,12 +315,12 @@ instance
   shrink = genericShrink
 
 instance
-  ( Core.EraTxOut era
+  ( EraTxOut era
   , Mock (EraCrypto era)
-  , Arbitrary (Core.TxOut era)
-  , Arbitrary (Core.Value era)
-  , Arbitrary (Core.PParams era)
-  , Arbitrary (State (Core.EraRule "PPUP" era))
+  , Arbitrary (TxOut era)
+  , Arbitrary (Value era)
+  , Arbitrary (PParams era)
+  , Arbitrary (State (EraRule "PPUP" era))
   , Arbitrary (StashedAVVMAddresses era)
   ) =>
   Arbitrary (NewEpochState era)
@@ -333,12 +328,12 @@ instance
   arbitrary = genericArbitraryU
 
 instance
-  ( Core.EraTxOut era
+  ( EraTxOut era
   , Mock (EraCrypto era)
-  , Arbitrary (Core.TxOut era)
-  , Arbitrary (Core.Value era)
-  , Arbitrary (Core.PParams era)
-  , Arbitrary (State (Core.EraRule "PPUP" era))
+  , Arbitrary (TxOut era)
+  , Arbitrary (Value era)
+  , Arbitrary (PParams era)
+  , Arbitrary (State (EraRule "PPUP" era))
   ) =>
   Arbitrary (EpochState era)
   where
@@ -434,8 +429,8 @@ instance Era era => Arbitrary (MultiSig era) where
   arbitrary = sizedMultiSig maxMultiSigDepth
 
 instance
-  (Mock (EraCrypto era), Arbitrary (ShelleyPParams era)) =>
-  Arbitrary (ShelleyGenesis era)
+  (Mock c, Arbitrary (PParams (ShelleyEra c))) =>
+  Arbitrary (ShelleyGenesis c)
   where
   arbitrary = do
     sgSystemStart <- arbitrary
@@ -461,7 +456,7 @@ instance Crypto c => Arbitrary (ShelleyGenesisStaking c) where
 instance
   ( Mock (EraCrypto era)
   , EraScript era
-  , Arbitrary (Core.Script era)
+  , Arbitrary (Script era)
   ) =>
   Arbitrary (ShelleyTxWits era)
   where
@@ -484,8 +479,8 @@ instance Era era => Arbitrary (STS.ShelleyPoolPredFailure era) where
 instance
   ( Era era
   , Mock (EraCrypto era)
-  , Arbitrary (STS.PredicateFailure (Core.EraRule "POOL" era))
-  , Arbitrary (STS.PredicateFailure (Core.EraRule "DELEG" era))
+  , Arbitrary (STS.PredicateFailure (EraRule "POOL" era))
+  , Arbitrary (STS.PredicateFailure (EraRule "DELEG" era))
   ) =>
   Arbitrary (STS.ShelleyDelplPredFailure era)
   where
@@ -502,7 +497,7 @@ instance
 instance
   ( Era era
   , Mock (EraCrypto era)
-  , Arbitrary (STS.PredicateFailure (Core.EraRule "DELPL" era))
+  , Arbitrary (STS.PredicateFailure (EraRule "DELPL" era))
   ) =>
   Arbitrary (STS.ShelleyDelegsPredFailure era)
   where
@@ -511,7 +506,7 @@ instance
 
 instance
   ( Era era
-  , Arbitrary (STS.PredicateFailure (Core.EraRule "LEDGER" era))
+  , Arbitrary (STS.PredicateFailure (EraRule "LEDGER" era))
   ) =>
   Arbitrary (STS.ShelleyLedgersPredFailure era)
   where
@@ -520,8 +515,8 @@ instance
 
 instance
   ( Era era
-  , Arbitrary (STS.PredicateFailure (Core.EraRule "DELEGS" era))
-  , Arbitrary (STS.PredicateFailure (Core.EraRule "UTXOW" era))
+  , Arbitrary (STS.PredicateFailure (EraRule "DELEGS" era))
+  , Arbitrary (STS.PredicateFailure (EraRule "UTXOW" era))
   ) =>
   Arbitrary (STS.ShelleyLedgerPredFailure era)
   where
@@ -530,7 +525,7 @@ instance
 
 instance
   ( Era era
-  , Arbitrary (STS.PredicateFailure (Core.EraRule "UTXO" era))
+  , Arbitrary (STS.PredicateFailure (EraRule "UTXO" era))
   ) =>
   Arbitrary (STS.ShelleyUtxowPredFailure era)
   where
@@ -538,10 +533,10 @@ instance
   shrink _ = []
 
 genTx ::
-  ( Core.EraTx era
-  , Arbitrary (Core.TxBody era)
-  , Arbitrary (Core.TxAuxData era)
-  , Arbitrary (Core.TxWits era)
+  ( EraTx era
+  , Arbitrary (TxBody era)
+  , Arbitrary (TxAuxData era)
+  , Arbitrary (TxWits era)
   ) =>
   Gen (ShelleyTx era)
 genTx =
@@ -554,7 +549,7 @@ genBlock ::
   forall era h.
   ( EraSegWits era
   , Mock (EraCrypto era)
-  , Arbitrary (Core.Tx era)
+  , Arbitrary (Tx era)
   , h ~ BHeader (EraCrypto era)
   ) =>
   Gen (Block h era)
@@ -572,7 +567,7 @@ genCoherentBlock ::
   forall era h.
   ( Mock (EraCrypto era)
   , EraSegWits era
-  , Arbitrary (Core.Tx era)
+  , Arbitrary (Tx era)
   , h ~ BHeader (EraCrypto era)
   ) =>
   Gen (Block h era)
@@ -600,22 +595,22 @@ genCoherentBlock = do
       ocert
 
 instance
-  ( Core.EraTx era
-  , Arbitrary (Core.TxBody era)
-  , Arbitrary (Core.Value era)
-  , Arbitrary (Core.TxAuxData era)
-  , Arbitrary (Core.Script era)
-  , Arbitrary (Core.TxWits era)
+  ( EraTx era
+  , Arbitrary (TxBody era)
+  , Arbitrary (Value era)
+  , Arbitrary (TxAuxData era)
+  , Arbitrary (Script era)
+  , Arbitrary (TxWits era)
   ) =>
   Arbitrary (ShelleyTx era)
   where
   arbitrary = genTx
 
 instance
-  ( Core.EraTxBody era
+  ( EraTxBody era
   , EraSegWits era
   , Mock (EraCrypto era)
-  , Arbitrary (Core.Tx era)
+  , Arbitrary (Tx era)
   , h ~ BHeader (EraCrypto era)
   ) =>
   Arbitrary (Block h era)
@@ -624,7 +619,7 @@ instance
 
 instance
   ( Era era
-  , Arbitrary (STS.PredicateFailure (Core.EraRule "LEDGER" era))
+  , Arbitrary (STS.PredicateFailure (EraRule "LEDGER" era))
   ) =>
   Arbitrary (ApplyTxError era)
   where

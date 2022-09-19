@@ -62,7 +62,7 @@ import Test.Cardano.Ledger.Shelley.Rules.TestChain (
  )
 import Test.Cardano.Ledger.Shelley.Serialisation.EraIndepGenerators ()
 import Test.Cardano.Ledger.Shelley.ShelleyTranslation (testGroupShelleyTranslation)
-import Test.Cardano.Ledger.Shelley.Utils (ChainProperty, RawSeed, mkKeyPair')
+import Test.Cardano.Ledger.Shelley.Utils (ChainProperty, RawSeed, ShelleyTest, mkKeyPair')
 import Test.QuickCheck (conjoin, (===), (==>))
 import Test.Tasty (TestTree, localOption, testGroup)
 import qualified Test.Tasty.QuickCheck as TQC
@@ -123,7 +123,7 @@ propertyTests ::
   , BaseM ledger ~ ReaderT Globals Identity
   , State ledger ~ LedgerState era
   , Signal ledger ~ Tx era
-  , ProtVerAtMost era 8
+  , ShelleyTest era
   ) =>
   TestTree
 propertyTests =

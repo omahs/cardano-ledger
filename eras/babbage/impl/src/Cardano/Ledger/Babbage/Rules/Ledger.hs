@@ -18,7 +18,6 @@ import Cardano.Ledger.Alonzo.Tx (AlonzoEraTx)
 import Cardano.Ledger.Babbage.Era (BabbageLEDGER)
 import Cardano.Ledger.Babbage.Rules.Utxow (BabbageUTXOW, BabbageUtxowPredFailure)
 import Cardano.Ledger.BaseTypes (ShelleyBase)
-import Cardano.Ledger.Coin (Coin)
 import Cardano.Ledger.Core
 import Cardano.Ledger.Shelley.LedgerState (
   DPState (..),
@@ -50,15 +49,12 @@ import Control.State.Transition (
   TRC (..),
  )
 import Data.Sequence (Seq)
-import GHC.Records (HasField)
 
 -- ==================================================
 
 instance
   ( AlonzoEraTx era
   , Show (State (EraRule "PPUP" era))
-  , HasField "_keyDeposit" (PParams era) Coin
-  , HasField "_poolDeposit" (PParams era) Coin
   , Embed (EraRule "DELEGS" era) (BabbageLEDGER era)
   , Embed (EraRule "UTXOW" era) (BabbageLEDGER era)
   , Environment (EraRule "UTXOW" era) ~ UtxoEnv era

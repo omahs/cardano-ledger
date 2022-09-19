@@ -57,7 +57,7 @@ import Cardano.Ledger.Binary.Crypto (
  )
 import Cardano.Ledger.Block (Block (..))
 import Cardano.Ledger.Coin (Coin (..), CompactForm (..), DeltaCoin (..))
-import Cardano.Ledger.Core (EraTx, Tx, hashScript, hashTxAuxData)
+import Cardano.Ledger.Core
 import Cardano.Ledger.Credential (Credential (..), StakeReference (..))
 import qualified Cardano.Ledger.Crypto as CC
 import Cardano.Ledger.EpochBoundary (
@@ -66,8 +66,6 @@ import Cardano.Ledger.EpochBoundary (
   Stake (..),
   calculatePoolDistr,
  )
-import Cardano.Ledger.Era (EraCrypto (..))
-import Cardano.Ledger.Hashes (EraIndependentTxBody)
 import Cardano.Ledger.Keys (
   Hash,
   KeyHash (..),
@@ -87,11 +85,8 @@ import Cardano.Ledger.Keys (
  )
 import Cardano.Ledger.PoolDistr (PoolDistr (..))
 import Cardano.Ledger.SafeHash (SafeHash, extractHash, hashAnnotated)
-import Cardano.Ledger.Shelley (ShelleyEra)
-import Cardano.Ledger.Shelley.API (
-  MultiSig,
-  ScriptHash,
- )
+import Cardano.Ledger.Shelley (Shelley, ShelleyEra)
+import Cardano.Ledger.Shelley.API (MultiSig)
 import Cardano.Ledger.Shelley.BlockChain (ShelleyTxSeq (..), bbHash)
 import Cardano.Ledger.Shelley.Delegation.Certificates (
   pattern ConstitutionalDelegCert,
@@ -110,9 +105,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   RewardUpdate (..),
  )
 import Cardano.Ledger.Shelley.PParams (
-  ShelleyPParamsHKD (..),
-  ShelleyPParamsUpdate,
-  emptyPParams,
+  ProposedPPUpdates (..),
   pattern ProposedPPUpdates,
   pattern Update,
  )
@@ -193,6 +186,7 @@ import Data.Ratio ((%))
 import qualified Data.Sequence.Strict as StrictSeq
 import qualified Data.Set as Set
 import Data.String (fromString)
+import Lens.Micro ((&), (.~))
 import Numeric.Natural (Natural)
 import Test.Cardano.Crypto.VRF.Fake (WithResult (..))
 import Test.Cardano.Ledger.Binary.TreeDiff (CBORBytes (CBORBytes), diffExpr)
@@ -214,6 +208,8 @@ import Test.Tasty.HUnit (assertFailure, testCase)
 -- ============================================
 
 type MultiSigMap = Map.Map (ScriptHash C_Crypto) (MultiSig (ShelleyEra C_Crypto))
+
+-- type Shelley = ShelleyEra C_Crypto
 
 decodeMultiSigMap :: Decoder s (Annotator MultiSigMap)
 decodeMultiSigMap = decodeMapTraverse (pure <$> fromCBOR) fromCBOR
@@ -689,27 +685,7 @@ tests =
     , checkEncodingCBOR
         shelleyProtVer
         "pparams_update_key_deposit_only"
-        ( ShelleyPParams
-            { _minfeeA = SNothing
-            , _minfeeB = SNothing
-            , _maxBBSize = SNothing
-            , _maxTxSize = SNothing
-            , _maxBHSize = SNothing
-            , _keyDeposit = SJust (Coin 5)
-            , _poolDeposit = SNothing
-            , _eMax = SNothing
-            , _nOpt = SNothing
-            , _a0 = SNothing
-            , _rho = SNothing
-            , _tau = SNothing
-            , _d = SNothing
-            , _extraEntropy = SNothing
-            , _protocolVersion = SNothing
-            , _minUTxOValue = SNothing
-            , _minPoolCost = SNothing
-            } ::
-            ShelleyPParamsUpdate C
-        )
+        (emptyPParamsUpdate @Shelley & ppuKeyDepositL .~ SJust (Coin 5))
         ((T $ TkMapLen 1 . TkWord 5) <> S (Coin 5))
     , -- checkEncodingCBOR "pparams_update_all"
       let minfeea = 0
@@ -732,26 +708,24 @@ tests =
        in checkEncodingCBOR
             shelleyProtVer
             "pparams_update_all"
-            ( ShelleyPParams
-                { _minfeeA = SJust minfeea
-                , _minfeeB = SJust minfeeb
-                , _maxBBSize = SJust maxbbsize
-                , _maxTxSize = SJust maxtxsize
-                , _maxBHSize = SJust maxbhsize
-                , _keyDeposit = SJust keydeposit
-                , _poolDeposit = SJust pooldeposit
-                , _eMax = SJust emax
-                , _nOpt = SJust nopt
-                , _a0 = SJust a0
-                , _rho = SJust rho
-                , _tau = SJust tau
-                , _d = SJust d
-                , _extraEntropy = SJust extraEntropy
-                , _protocolVersion = SJust protocolVersion
-                , _minUTxOValue = SJust minUTxOValue
-                , _minPoolCost = SJust minPoolCost
-                } ::
-                ShelleyPParamsUpdate C
+            ( emptyPParamsUpdate @Shelley
+                & ppuMinFeeAL .~ SJust minfeea
+                & ppuMinFeeBL .~ SJust minfeeb
+                & ppuMaxBBSizeL .~ SJust maxbbsize
+                & ppuMaxTxSizeL .~ SJust maxtxsize
+                & ppuMaxBHSizeL .~ SJust maxbhsize
+                & ppuKeyDepositL .~ SJust keydeposit
+                & ppuPoolDepositL .~ SJust pooldeposit
+                & ppuEMaxL .~ SJust emax
+                & ppuNOptL .~ SJust nopt
+                & ppuA0L .~ SJust a0
+                & ppuRhoL .~ SJust rho
+                & ppuTauL .~ SJust tau
+                & ppuDL .~ SJust d
+                & ppuExtraEntropyL .~ SJust extraEntropy
+                & ppuProtocolVersionL .~ SJust protocolVersion
+                & ppuMinUTxOValueL .~ SJust minUTxOValue
+                & ppuMinPoolCostL .~ SJust minPoolCost
             )
             ( (T $ TkMapLen 17)
                 <> (T $ TkWord 0)
@@ -794,26 +768,7 @@ tests =
             ProposedPPUpdates @C
               ( Map.singleton
                   (testGKeyHash @C_Crypto)
-                  ( ShelleyPParams
-                      { _minfeeA = SNothing
-                      , _minfeeB = SNothing
-                      , _maxBBSize = SNothing
-                      , _maxTxSize = SNothing
-                      , _maxBHSize = SNothing
-                      , _keyDeposit = SNothing
-                      , _poolDeposit = SNothing
-                      , _eMax = SNothing
-                      , _nOpt = SJust 100
-                      , _a0 = SNothing
-                      , _rho = SNothing
-                      , _tau = SNothing
-                      , _d = SNothing
-                      , _extraEntropy = SNothing
-                      , _protocolVersion = SNothing
-                      , _minUTxOValue = SNothing
-                      , _minPoolCost = SNothing
-                      }
-                  )
+                  (emptyPParamsUpdate & ppuNOptL .~ SJust 100)
               )
           e = EpochNo 0
        in checkEncodingCBOR
@@ -857,30 +812,9 @@ tests =
           ras = Map.singleton ra (Coin 123)
           up =
             Update
-              ( ProposedPPUpdates
-                  ( Map.singleton
-                      testGKeyHash
-                      ( ShelleyPParams
-                          { _minfeeA = SNothing
-                          , _minfeeB = SNothing
-                          , _maxBBSize = SNothing
-                          , _maxTxSize = SNothing
-                          , _maxBHSize = SNothing
-                          , _keyDeposit = SNothing
-                          , _poolDeposit = SNothing
-                          , _eMax = SNothing
-                          , _nOpt = SJust 100
-                          , _a0 = SNothing
-                          , _rho = SNothing
-                          , _tau = SNothing
-                          , _d = SNothing
-                          , _extraEntropy = SNothing
-                          , _protocolVersion = SNothing
-                          , _minUTxOValue = SNothing
-                          , _minPoolCost = SNothing
-                          }
-                      )
-                  )
+              ( ProposedPPUpdates $
+                  Map.singleton testGKeyHash $
+                    emptyPParamsUpdate & ppuNOptL .~ SJust 100
               )
               (EpochNo 0)
        in checkEncodingCBORAnnotated
@@ -919,30 +853,9 @@ tests =
           ras = Map.singleton ra (Coin 123)
           up =
             Update
-              ( ProposedPPUpdates
-                  ( Map.singleton
-                      testGKeyHash
-                      ( ShelleyPParams
-                          { _minfeeA = SNothing
-                          , _minfeeB = SNothing
-                          , _maxBBSize = SNothing
-                          , _maxTxSize = SNothing
-                          , _maxBHSize = SNothing
-                          , _keyDeposit = SNothing
-                          , _poolDeposit = SNothing
-                          , _eMax = SNothing
-                          , _nOpt = SJust 100
-                          , _a0 = SNothing
-                          , _rho = SNothing
-                          , _tau = SNothing
-                          , _d = SNothing
-                          , _extraEntropy = SNothing
-                          , _protocolVersion = SNothing
-                          , _minUTxOValue = SNothing
-                          , _minPoolCost = SNothing
-                          }
-                      )
-                  )
+              ( ProposedPPUpdates $
+                  Map.singleton testGKeyHash $
+                    emptyPParamsUpdate & ppuNOptL .~ SJust 100
               )
               (EpochNo 0)
           mdh = hashTxAuxData @C $ TxAuxData.ShelleyTxAuxData $ Map.singleton 13 (TxAuxData.I 17)

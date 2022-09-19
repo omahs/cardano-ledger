@@ -28,7 +28,7 @@ import Cardano.Ledger.Mary.Value (
   multiAssetFromList,
   policies,
  )
-import Cardano.Ledger.Shelley.PParams (ShelleyPParams, ShelleyPParamsHKD (..), Update)
+import Cardano.Ledger.Shelley.PParams (ShelleyPParams, ShelleyPParamsHKD (..), ShelleyPParamsUpdate, Update)
 import Cardano.Ledger.Shelley.Tx (
   ShelleyTxOut (..),
   TxIn,
@@ -46,7 +46,6 @@ import Data.Sequence.Strict (StrictSeq (..), (<|), (><))
 import qualified Data.Sequence.Strict as StrictSeq
 import qualified Data.Set as Set
 import GHC.Exts (fromString)
-import GHC.Records (HasField (getField))
 import Lens.Micro
 import Test.Cardano.Ledger.AllegraEraGen (
   genValidityInterval,
@@ -92,7 +91,7 @@ instance (CC.Crypto c, Mock c) => EraGen (MaryEra c) where
   genEraAuxiliaryData = genAuxiliaryData
   updateEraTxBody _utxo _pp _wits txBody fee ins out =
     txBody
-      & inputsTxBodyL %~ (<> ins)
+      & inputsTxBodyL <>~ ins
       & outputsTxBodyL %~ (:|> out)
       & feeTxBodyL .~ fee
   genEraPParamsUpdate = genShelleyPParamsUpdate
@@ -273,7 +272,7 @@ addTokens ::
   Maybe (StrictSeq (TxOut era))
 addTokens proxy tooLittleLovelace pparams ts (txOut :<| os) =
   let v = txOut ^. valueTxOutL
-   in if Val.coin v < scaledMinDeposit v (getField @"_minUTxOValue" pparams)
+   in if Val.coin v < scaledMinDeposit v (pparams ^. ppMinUTxOValueL)
         then addTokens proxy (txOut :<| tooLittleLovelace) pparams ts os
         else Just $ tooLittleLovelace >< addValToTxOut @era (MaryValue 0 ts) txOut <| os
 addTokens _proxy _ _ _ StrictSeq.Empty = Nothing
@@ -284,9 +283,10 @@ genTxBody ::
   ( EraGen era
   , Value era ~ MaryValue (EraCrypto era)
   , PParams era ~ ShelleyPParams era
+  , PParamsUpdate era ~ ShelleyPParamsUpdate era
   , TxOut era ~ ShelleyTxOut era
   ) =>
-  ShelleyPParams era ->
+  PParams era ->
   SlotNo ->
   Set.Set (TxIn (EraCrypto era)) ->
   StrictSeq (ShelleyTxOut era) ->
@@ -330,7 +330,7 @@ instance Split (MaryValue era) where
         )
 
 instance Mock c => MinGenTxout (MaryEra c) where
-  calcEraMinUTxO _txout pp = _minUTxOValue pp
+  calcEraMinUTxO _txout pp = pp ^. ppMinUTxOValueL
   addValToTxOut v (ShelleyTxOut a u) = ShelleyTxOut a (v <+> u)
   genEraTxOut _genenv genVal addrs = do
     values <- replicateM (length addrs) genVal

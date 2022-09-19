@@ -60,6 +60,7 @@ import Test.Cardano.Ledger.Shelley.Generator.Presets (genesisDelegs0)
 import Test.Cardano.Ledger.Shelley.Generator.Trace.DCert (CERTS)
 import Test.Cardano.Ledger.Shelley.Generator.Utxo (genTx)
 import Test.Cardano.Ledger.Shelley.Utils (
+  ShelleyTest,
   applySTSTest,
   runShelleyBase,
  )
@@ -93,6 +94,8 @@ instance
   , State (Core.EraRule "DELEGS" era) ~ DPState (EraCrypto era)
   , Signal (Core.EraRule "DELEGS" era) ~ Seq (DCert (EraCrypto era))
   , Show (State (Core.EraRule "PPUP" era))
+  , ShelleyTest era
+  , ProtVerAtMost era 4
   , ProtVerAtMost era 8
   ) =>
   TQC.HasTrace (ShelleyLEDGER era) (GenEnv era)
@@ -121,7 +124,8 @@ instance
   , PredicateFailure (Core.EraRule "DELPL" era) ~ ShelleyDelplPredFailure era
   , Embed (Core.EraRule "DELEG" era) (ShelleyDELPL era)
   , Embed (Core.EraRule "LEDGER" era) (ShelleyLEDGERS era)
-  , Default (State (Core.EraRule "PPUP" era))
+  , ShelleyTest era
+  , ProtVerAtMost era 4
   ) =>
   TQC.HasTrace (ShelleyLEDGERS era) (GenEnv era)
   where

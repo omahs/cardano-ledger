@@ -69,7 +69,7 @@ import Test.Cardano.Ledger.Shelley.Generator.Core (GenEnv (..), KeySpace (..))
 import Test.Cardano.Ledger.Shelley.Generator.Delegation (CertCred (..), genDCert)
 import Test.Cardano.Ledger.Shelley.Generator.EraGen (EraGen (..))
 import Test.Cardano.Ledger.Shelley.Generator.ScriptClass (scriptKeyCombination)
-import Test.Cardano.Ledger.Shelley.Utils (testGlobals)
+import Test.Cardano.Ledger.Shelley.Utils (ShelleyTest, testGlobals)
 import Test.QuickCheck (Gen)
 
 -- | This is a non-spec STS used to generate a sequence of certificates with
@@ -157,6 +157,7 @@ instance
   , Environment (Core.EraRule "DELPL" era) ~ DelplEnv era
   , State (Core.EraRule "DELPL" era) ~ DPState (EraCrypto era)
   , Signal (Core.EraRule "DELPL" era) ~ DCert (EraCrypto era)
+  , ShelleyTest era
   ) =>
   QC.HasTrace (CERTS era) (GenEnv era)
   where
@@ -192,6 +193,7 @@ genDCerts ::
   , Environment (Core.EraRule "DELPL" era) ~ DelplEnv era
   , State (Core.EraRule "DELPL" era) ~ DPState (EraCrypto era)
   , Signal (Core.EraRule "DELPL" era) ~ DCert (EraCrypto era)
+  , ShelleyTest era
   ) =>
   GenEnv era ->
   Core.PParams era ->

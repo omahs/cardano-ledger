@@ -36,8 +36,8 @@ module Test.Cardano.Ledger.Shelley.Utils (
   getBlockNonce,
   ShelleyTest,
   ChainProperty,
-  Split (..),
   RawSeed (..),
+  Split (..),
 )
 where
 
@@ -143,15 +143,38 @@ type ShelleyTest era =
   , ShelleyEraTxBody era
   , Tx era ~ ShelleyTx era
   , TxSeq era ~ ShelleyTxSeq era
-  , ShelleyTxOut era ~ TxOut era
+  , TxOut era ~ ShelleyTxOut era
   , TxWits era ~ ShelleyTxWits era
   , Split (Value era)
   , Default (State (EraRule "PPUP" era))
   , Default (StashedAVVMAddresses era)
+  , ProtVerAtMost era 4 -- <- PParams deprecations from future eras
+  , ProtVerAtMost era 6
+  , ProtVerAtMost era 8
   )
 
 class Split v where
   vsplit :: v -> Integer -> ([v], Coin)
+
+-- ===============================================================================
+-- Generating random transactions requires splitting Values into multiple Values
+-- with the same underlying amount of Coin. This property is crucial to generating
+-- transactions which have the preservation of ADA property. (vsplit n v) breaks
+-- v into n different values, and one remainder Coin, where the sum of the Coin
+-- in the original value, and the sum of the underlying Coin in the list plus the
+-- remainder coin are equal.
+-- Given:    let (vs,coin) = split n value
+-- Then:     (coin value) == sum(map coin vs) <+> coin
+
+-- We introduce a new class Split which supplies this operation.
+-- As new kinds of values become instances of the Val class, and we want to generate
+-- transactions over these values, we will have to add additional instances here.
+
+instance Split Coin where
+  vsplit (Coin n) 0 = ([], Coin n)
+  vsplit (Coin n) m
+    | m <= 0 = error "must split coins into positive parts"
+    | otherwise = (take (fromIntegral m) (repeat (Coin (n `div` m))), Coin (n `rem` m))
 
 type GenesisKeyPair c = KeyPair 'Genesis c
 

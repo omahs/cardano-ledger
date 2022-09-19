@@ -21,6 +21,7 @@ import Cardano.Ledger.Address (
 import Cardano.Ledger.BaseTypes hiding ((==>))
 import Cardano.Ledger.Binary (serialize')
 import Cardano.Ledger.Coin
+import Cardano.Ledger.Core (PParams (..), emptyPParams, ppEMaxL, ppKeyDepositL, ppMaxTxSizeL, ppMinFeeAL, ppMinFeeBL, ppMinPoolCostL, ppMinUTxOValueL, ppPoolDepositL)
 import Cardano.Ledger.Credential (
   Credential (..),
   StakeReference (..),
@@ -50,7 +51,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   dsUnified,
   rewards,
  )
-import Cardano.Ledger.Shelley.PParams
+import Cardano.Ledger.Shelley.PParams hiding (emptyPParams)
 import Cardano.Ledger.Shelley.Rules (
   ShelleyDelegsPredFailure (..),
   ShelleyDelplPredFailure (..),
@@ -103,6 +104,7 @@ import qualified Data.Sequence.Strict as StrictSeq
 import qualified Data.Set as Set
 import Data.Word (Word64)
 import GHC.Stack
+import Lens.Micro
 import Numeric.Natural (Natural)
 import Test.Cardano.Ledger.Core.KeyPair (KeyPair (..), mkVKeyRwdAcnt, mkWitnessVKey, mkWitnessesVKey, vKey)
 import Test.Cardano.Ledger.Shelley.Address.Bootstrap (
@@ -160,18 +162,17 @@ bobAddr =
 mkGenesisTxIn :: (HashAlgorithm (HASH c), HasCallStack) => Integer -> TxIn c
 mkGenesisTxIn = TxIn genesisId . mkTxIxPartial
 
-pp :: ShelleyPParams era
+pp :: forall era. ShelleyTest era => PParams era
 pp =
   emptyPParams
-    { _minfeeA = 1
-    , _minfeeB = 1
-    , _keyDeposit = Coin 100
-    , _poolDeposit = Coin 250
-    , _maxTxSize = 1024
-    , _eMax = EpochNo 10
-    , _minUTxOValue = Coin 100
-    , _minPoolCost = Coin 100
-    }
+    & ppMinFeeAL .~ (1)
+    & ppMinFeeBL .~ (1)
+    & ppKeyDepositL .~ (Coin 100)
+    & ppPoolDepositL .~ (Coin 250)
+    & ppMaxTxSizeL .~ (1024)
+    & ppEMaxL .~ (EpochNo 10)
+    & ppMinUTxOValueL .~ (Coin 100)
+    & ppMinPoolCostL .~ (Coin 10)
 
 testVRFCheckWithActiveSlotCoeffOne :: Assertion
 testVRFCheckWithActiveSlotCoeffOne =
@@ -686,7 +687,7 @@ testPoolCostTooSmall =
     [ DelegsFailure
         ( DelplFailure
             ( PoolFailure
-                ( StakePoolCostTooLowPOOL (ppCost alicePoolParamsSmallCost) (_minPoolCost (pp @C))
+                ( StakePoolCostTooLowPOOL (ppCost alicePoolParamsSmallCost) ((pp @C ^. ppMinPoolCostL))
                 )
             )
         )

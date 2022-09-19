@@ -10,11 +10,6 @@ module Cardano.Ledger.Shelley.Bench.Gen (
 )
 where
 
-import qualified Cardano.Ledger.Core as Core
-import Cardano.Ledger.Era (EraCrypto)
-
--- Use Another constraint, so this works in all Eras
-
 import Cardano.Ledger.Shelley.API (
   ApplyBlock,
   Block,
@@ -24,11 +19,11 @@ import Cardano.Ledger.Shelley.API (
   ShelleyLEDGERS,
   ShelleyTx,
  )
+import Cardano.Ledger.Shelley.Core
 import Cardano.Ledger.Shelley.LedgerState (
   EpochState (..),
   NewEpochState (..),
  )
-import Cardano.Ledger.Shelley.PParams (ShelleyPParams)
 import Cardano.Protocol.TPraos.API (GetLedgerView)
 import Cardano.Protocol.TPraos.BHeader (BHeader)
 import Control.State.Transition.Extended
@@ -90,7 +85,7 @@ genBlock ::
   , EraGen era
   , MinLEDGER_STS era
   , GetLedgerView era
-  , Core.EraRule "LEDGERS" era ~ ShelleyLEDGERS era
+  , EraRule "LEDGERS" era ~ ShelleyLEDGERS era
   , QC.HasTrace (ShelleyLEDGERS era) (GenEnv era)
   , ApplyBlock era
   ) =>
@@ -109,12 +104,11 @@ genBlock ge cs = generate $ GenBlock.genBlock ge cs
 
 genTriple ::
   ( EraGen era
-  , Core.PParams era ~ ShelleyPParams era
   , Mock (EraCrypto era)
-  , Embed (Core.EraRule "DELPL" era) (CERTS era)
-  , Environment (Core.EraRule "DELPL" era) ~ DelplEnv era
-  , State (Core.EraRule "DELPL" era) ~ DPState (EraCrypto era)
-  , Signal (Core.EraRule "DELPL" era) ~ DCert (EraCrypto era)
+  , Embed (EraRule "DELPL" era) (CERTS era)
+  , Environment (EraRule "DELPL" era) ~ DelplEnv era
+  , State (EraRule "DELPL" era) ~ DPState (EraCrypto era)
+  , Signal (EraRule "DELPL" era) ~ DCert (EraCrypto era)
   , ShelleyTest era
   ) =>
   Proxy era ->

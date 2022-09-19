@@ -13,14 +13,7 @@ module Cardano.Ledger.Pretty.Conway (
 )
 where
 
-import Cardano.Ledger.Babbage.TxBody (
-  AllegraEraTxBody (..),
-  AlonzoEraTxBody (..),
-  BabbageEraTxBody (..),
-  MaryEraTxBody (..),
-  ShelleyEraTxBody (..),
- )
-import Cardano.Ledger.Conway.Core (ConwayEraTxBody (..))
+import Cardano.Ledger.Conway.Core
 import Cardano.Ledger.Conway.Delegation.Certificates (ConwayDCert (..), transDCert)
 import Cardano.Ledger.Conway.Governance (
   GovernanceAction (..),
@@ -32,7 +25,6 @@ import Cardano.Ledger.Conway.Governance (
   VoterRole (..),
  )
 import Cardano.Ledger.Conway.TxBody (ConwayTxBody (..))
-import Cardano.Ledger.Core (EraPParams (..), EraTxBody (..), EraTxOut (..))
 import Cardano.Ledger.Pretty (
   PDoc,
   PrettyA (..),
