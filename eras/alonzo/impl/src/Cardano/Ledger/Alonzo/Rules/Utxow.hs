@@ -356,7 +356,7 @@ alonzoStyleWitness = do
   {-  txb := txbody tx  -}
   {-  txw := txwits tx  -}
   {-  witsKeyHashes := { hashKey vk | vk ∈ dom(txwitsVKey txw) }  -}
-  let utxo = utxosUtxo u
+  let utxo = sutxosUtxo u
       txBody = tx ^. bodyTxL
       witsKeyHashes = witsFromTxWitnesses @era tx
 
@@ -429,7 +429,7 @@ alonzoStyleWitness = do
 --  required to authenticate collateral witnesses.
 witsVKeyNeeded ::
   forall era.
-  (EraTx era, AlonzoEraTxBody era, ProtVerAtMost era 8) =>
+  (EraTx era, AlonzoEraTxBody era) =>
   UTxO era ->
   Tx era ->
   GenDelegs (EraCrypto era) ->
@@ -487,7 +487,7 @@ witsVKeyNeeded utxo' tx genDelegs =
     updateKeys =
       asWitness
         `Set.map` propWits
-          (strictMaybeToMaybe $ txBody ^. updateTxBodyL)
+          (strictMaybeToMaybe $ txBody ^. updateTxBodyG)
           genDelegs
 
 extSymmetricDifference :: (Ord k) => [a] -> (a -> k) -> [b] -> (b -> k) -> ([a], [b])

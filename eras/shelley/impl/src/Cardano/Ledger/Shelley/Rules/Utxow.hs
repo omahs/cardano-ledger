@@ -310,7 +310,7 @@ transitionRulesUTXOW = do
 
   {-  (utxo,_,_,_ ) := utxoSt  -}
   {-  witsKeyHashes := { hashKey vk | vk ∈ dom(txwitsVKey txw) }  -}
-  let utxo = utxosUtxo u
+  let utxo = sutxosUtxo u
       witsKeyHashes = witsFromTxWitnesses tx
 
   -- check scripts

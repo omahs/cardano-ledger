@@ -36,11 +36,13 @@ import Cardano.Ledger.Crypto (Crypto (..))
 import Cardano.Ledger.Keys (
   Hash,
   KeyHash,
+  KeyPair (..),
   KeyRole (..),
   VerKeyVRF,
   asWitness,
   hashKey,
   hashVerKeyVRF,
+  vKey,
  )
 import Cardano.Ledger.SafeHash (hashAnnotated)
 import Cardano.Ledger.Shelley (ShelleyEra)
@@ -96,6 +98,7 @@ import Test.Cardano.Ledger.Shelley.Generator.EraGen (genesisId)
 import Test.Cardano.Ledger.Shelley.Generator.ShelleyEraGen ()
 import Test.Cardano.Ledger.Shelley.Utils (
   RawSeed (..),
+  mkAddr,
   mkKeyPair,
   mkKeyPair',
   mkVRFKeyPair,

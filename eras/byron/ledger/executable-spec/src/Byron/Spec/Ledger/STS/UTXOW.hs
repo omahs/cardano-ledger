@@ -67,7 +67,7 @@ data UtxowPredicateFailure
 
 instance STS UTXOW where
   type Environment UTXOW = UTxOEnv
-  type State UTXOW = UTxOState
+  type State UTXOW = ShelleyUTxOState
   type Signal UTXOW = Tx
   type PredicateFailure UTXOW = UtxowPredicateFailure
 
@@ -79,7 +79,7 @@ instance STS UTXOW where
 
   transitionRules =
     [ do
-        TRC (env, utxoSt@UTxOState {utxo}, tw) <- judgmentContext
+        TRC (env, utxoSt@ShelleyUTxOState {utxo}, tw) <- judgmentContext
         witnessed tw utxo ?! InsufficientWitnesses
         utxoSt' <- trans @UTXO $ TRC (env, utxoSt, tw)
         return utxoSt'

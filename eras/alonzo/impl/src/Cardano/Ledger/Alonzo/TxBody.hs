@@ -269,7 +269,11 @@ deriving instance
 deriving via
   (Mem AlonzoTxBodyRaw era)
   instance
-    (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+    ( Era era
+    , FromCBOR (TxOut era)
+    , FromCBOR (PParamsUpdate era)
+    , Show (Value era)
+    ) =>
     FromCBOR (Annotator (AlonzoTxBody era))
 
 pattern AlonzoTxBody ::
@@ -449,7 +453,11 @@ instance
           !> encodeKeyedStrictMaybe 15 atbrTxNetworkId
 
 instance
-  (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+  ( Era era
+  , FromCBOR (TxOut era)
+  , FromCBOR (PParamsUpdate era)
+  , Show (Value era)
+  ) =>
   FromCBOR (AlonzoTxBodyRaw era)
   where
   fromCBOR =
@@ -506,7 +514,11 @@ emptyAlonzoTxBodyRaw =
     SNothing
 
 instance
-  (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+  ( Era era
+  , FromCBOR (TxOut era)
+  , FromCBOR (PParamsUpdate era)
+  , Show (Value era)
+  ) =>
   FromCBOR (Annotator (AlonzoTxBodyRaw era))
   where
   fromCBOR = pure <$> fromCBOR

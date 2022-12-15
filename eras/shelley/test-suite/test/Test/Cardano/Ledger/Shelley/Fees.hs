@@ -25,9 +25,11 @@ import Cardano.Ledger.Core
 import qualified Cardano.Ledger.Crypto as Cr
 import Cardano.Ledger.Keys (
   KeyHash,
+  KeyPair (..),
   KeyRole (..),
   asWitness,
   hashKey,
+  vKey,
  )
 import Cardano.Ledger.SafeHash (hashAnnotated)
 import Cardano.Ledger.Shelley (Shelley)

@@ -26,7 +26,7 @@ import Cardano.Ledger.Core
 import qualified Cardano.Ledger.Crypto as CC
 import Cardano.Ledger.Keys (GenDelegs (..))
 import Cardano.Ledger.SafeHash (hashAnnotated)
-import Cardano.Ledger.Shelley.LedgerState (IncrementalStake (..), UTxOState (..))
+import Cardano.Ledger.Shelley.LedgerState (IncrementalStake (..), PPUPStateOrUnit, UTxOState (..))
 import Cardano.Ledger.Shelley.Rules (UtxoEnv (..))
 import Cardano.Ledger.Shelley.UTxO (EraUTxO (..), UTxO (..))
 import Cardano.Ledger.Val (Val (inject))
@@ -137,7 +137,7 @@ testExUnitCalculation proof tx utxoState ue ei ss costmdls err = do
         applySTSTest @(EraRule "UTXOS" era) (TRC (ue, utxoState, tx'))
   pure ()
   where
-    utxo = utxosUtxo utxoState
+    utxo = sutxosUtxo utxoState
 
 exampleExUnitCalc ::
   forall era.
@@ -153,8 +153,8 @@ exampleExUnitCalc ::
   , PostShelley era
   , EraUTxO era
   , ScriptsNeeded era ~ AlonzoScriptsNeeded era
-  , Default (State (EraRule "PPUP" era))
   , Script era ~ AlonzoScript era
+  , Default (PPUPStateOrUnit era)
   ) =>
   Proof era ->
   IO ()
@@ -256,16 +256,19 @@ costmodels :: Array Language CostModel
 costmodels = array (PlutusV1, PlutusV1) [(PlutusV1, testingCostModelV1)]
 
 ustate ::
-  (EraTxOut era, PostShelley era, Default (State (EraRule "PPUP" era))) =>
+  ( EraTxOut era
+  , PostShelley era
+  , Default (PPUPStateOrUnit era)
+  ) =>
   Proof era ->
   UTxOState era
 ustate pf =
   UTxOState
-    { utxosUtxo = initUTxO pf
-    , utxosDeposited = Coin 0
-    , utxosFees = Coin 0
-    , utxosPpups = def
-    , utxosStakeDistr = IStake mempty mempty
+    { sutxosUtxo = initUTxO pf
+    , sutxosDeposited = Coin 0
+    , sutxosFees = Coin 0
+    , sutxosPpups = def
+    , sutxosStakeDistr = IStake mempty mempty
     }
 
 updateTxExUnits ::

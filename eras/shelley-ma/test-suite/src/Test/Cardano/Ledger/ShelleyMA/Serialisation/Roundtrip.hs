@@ -46,11 +46,15 @@ eraRoundTripProps ::
 eraRoundTripProps =
   testGroup
     (show $ typeRep (Proxy @e))
-    [ testProperty "TxBody" $ roundTripAnnExpectation @(Core.TxBody e)
-    , testProperty "Metadata" $ roundTripAnnExpectation @(Core.TxAuxData e)
-    , testProperty "Value" $ roundTripExpectation @(Core.Value e) cborTrip
-    , testProperty "Script" $ roundTripAnnExpectation @(Core.Script e)
-    , testProperty "ApplyTxError" $ roundTripCborExpectation @(ApplyTxError e)
+    [ testGroup
+      (show v)
+      [ testProperty "TxBody" $ roundTripAnnExpectation @(Core.TxBody e) v
+      , testProperty "Metadata" $ roundTripAnnExpectation @(Core.TxAuxData e) v
+      , testProperty "Value" $ roundTripExpectation @(Core.Value e) v cborTrip
+      , testProperty "Script" $ roundTripAnnExpectation @(Core.Script e) v
+      , testProperty "ApplyTxError" $ roundTripCborExpectation @(ApplyTxError e) v
+      ]
+    | v <- [Core.eraProtVerLow @e .. Core.eraProtVerHigh @e]
     ]
 
 allEraRoundtripTests :: TestTree

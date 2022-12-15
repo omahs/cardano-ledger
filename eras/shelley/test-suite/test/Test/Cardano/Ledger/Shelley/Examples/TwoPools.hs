@@ -53,6 +53,8 @@ import Cardano.Ledger.PoolDistr (
  )
 import Cardano.Ledger.SafeHash (hashAnnotated)
 import Cardano.Ledger.Shelley.LedgerState (
+  PPUPState (..),
+  PPUPStateOrUnit,
   PulsingRewUpdate (..),
   RewardUpdate (..),
   completeStep,
@@ -161,6 +163,7 @@ type TwoPoolsConstraints era =
   , PreAlonzo era
   , Core.EraSegWits era
   , ToCBOR (Core.Script era)
+  , PPUPStateOrUnit era ~ PPUPState era
   )
 
 aliceInitCoin :: Coin

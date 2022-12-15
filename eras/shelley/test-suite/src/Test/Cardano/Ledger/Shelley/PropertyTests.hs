@@ -28,7 +28,8 @@ import Cardano.Ledger.Core
 import qualified Cardano.Ledger.Crypto as CC (Crypto)
 import Cardano.Ledger.Keys (DSignable, Hash)
 import Cardano.Ledger.SafeHash (SafeHash)
-import Cardano.Ledger.Shelley.API (LedgerState, PPUPState)
+import Cardano.Ledger.Shelley.API (LedgerState, PPUPState (..))
+import Cardano.Ledger.Shelley.LedgerState (PPUPStateOrUnit)
 import Cardano.Ledger.Shelley.Rules (LedgerEnv)
 import Cardano.Ledger.Shelley.Tx (ShelleyTx)
 import Control.Monad.Trans.Reader (ReaderT)
@@ -40,6 +41,16 @@ import Data.Set as Set (fromList, singleton)
 import Test.Cardano.Ledger.Core.KeyPair (mkWitnessVKey)
 import Test.Cardano.Ledger.Shelley.Address.Bootstrap (
   bootstrapHashTest,
+ )
+import Test.Cardano.Ledger.Shelley.Address.Bootstrap (
+  bootstrapHashTest,
+ )
+import Test.Cardano.Ledger.Shelley.Address.CompactAddr (
+  propCompactAddrRoundTrip,
+  propCompactSerializationAgree,
+  propDecompactErrors,
+  propDeserializeRewardAcntErrors,
+  propValidateNewDecompact,
  )
 import Test.Cardano.Ledger.Shelley.ByronTranslation (testGroupByronTranslation)
 import Test.Cardano.Ledger.Shelley.Generator.Core (GenEnv)
@@ -93,8 +104,8 @@ minimalPropertyTests ::
   , TestingLedger era ledger
   , ChainProperty era
   , QC.HasTrace (CHAIN era) (GenEnv era)
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , ProtVerAtMost era 8
+  , PPUPState era ~ PPUPStateOrUnit era
   ) =>
   TestTree
 minimalPropertyTests =
@@ -104,6 +115,17 @@ minimalPropertyTests =
     , TQC.testProperty "total amount of Ada is preserved (Chain)" (adaPreservationChain @era @ledger)
     , TQC.testProperty "Only valid CHAIN STS signals are generated" (onlyValidChainSignalsAreGenerated @era)
     , bootstrapHashTest
+    , testGroup
+        "Compact Address Tests"
+        [ TQC.testProperty "Compact address round trip" (propCompactAddrRoundTrip @(EraCrypto era))
+        , TQC.testProperty "Compact address binary representation" (propCompactSerializationAgree @(EraCrypto era))
+        , TQC.testProperty "Ensure Addr failures on incorrect binary data" $
+            propDecompactErrors @(EraCrypto era)
+        , TQC.testProperty "Ensure RewardAcnt failures on incorrect binary data" $
+            propDeserializeRewardAcntErrors @(EraCrypto era)
+        , TQC.testProperty "Decompacting an address is still valid" $
+            propValidateNewDecompact @(EraCrypto era)
+        ]
     , TQC.testProperty "WitVKey does not brake containers due to invalid Ord" $
         propWitVKeys @(EraCrypto era)
     ]
@@ -117,13 +139,13 @@ propertyTests ::
   , QC.HasTrace ledger (GenEnv era)
   , Embed (EraRule "DELEGS" era) ledger
   , Embed (EraRule "UTXOW" era) ledger
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , Environment ledger ~ LedgerEnv era
   , QC.BaseEnv ledger ~ Globals
   , BaseM ledger ~ ReaderT Globals Identity
   , State ledger ~ LedgerState era
   , Signal ledger ~ Tx era
   , ProtVerAtMost era 8
+  , PPUPState era ~ PPUPStateOrUnit era
   ) =>
   TestTree
 propertyTests =
@@ -175,6 +197,15 @@ propertyTests =
         , TQC.testProperty
             "Only valid CHAIN STS signals are generated"
             (onlyValidChainSignalsAreGenerated @era)
+        ]
+    , testGroupByronTranslation
+    , testGroupShelleyTranslation
+    , testGroup
+        "Compact Address Tests"
+        [ TQC.testProperty "Compact address round trip" (propCompactAddrRoundTrip @(EraCrypto era))
+        , TQC.testProperty "Compact address binary representation" (propCompactSerializationAgree @(EraCrypto era))
+        , TQC.testProperty "Ensure failures on incorrect binary data" $
+            propDecompactErrors @(EraCrypto era)
         ]
     , testGroupByronTranslation
     , testGroupShelleyTranslation

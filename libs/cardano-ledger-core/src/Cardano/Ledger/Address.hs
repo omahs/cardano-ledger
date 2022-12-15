@@ -16,6 +16,10 @@
 
 module Cardano.Ledger.Address (
   mkRwdAcnt,
+  mkVKeyRwdAcnt,
+  mkRwdAcnt,
+  toAddr,
+  toCred,
   serialiseAddr,
   deserialiseAddr,
   Addr (..),
@@ -28,6 +32,20 @@ module Cardano.Ledger.Address (
   deserialiseRewardAcnt,
   -- internals exported for testing
   bootstrapKeyHash,
+  --  Bits
+  byron,
+  notBaseAddr,
+  isEnterpriseAddr,
+  stakeCredIsScript,
+  -- internals exported for testing
+  getAddr,
+  getKeyHash,
+  bootstrapKeyHash,
+  getPtr,
+  getRewardAcnt,
+  getScriptHash,
+  getVariableLengthWord64,
+  payCredIsScript,
   putAddr,
   putCredential,
   putPtr,
@@ -57,6 +75,9 @@ module Cardano.Ledger.Address (
   decodeRewardAcnt,
   fromCborRewardAcnt,
   Fail (..),
+  word7sToWord64,
+  Word7 (..),
+  toWord7,
 )
 where
 
@@ -88,6 +109,14 @@ import Cardano.Ledger.Credential (
 import Cardano.Ledger.Crypto (Crypto)
 import Cardano.Ledger.Hashes (ScriptHash (..))
 import Cardano.Ledger.Keys (KeyHash (..), KeyRole (..))
+import qualified Cardano.Ledger.Crypto as CC (Crypto)
+import Cardano.Ledger.Hashes (ScriptHash (..))
+import Cardano.Ledger.Keys (
+  KeyHash (..),
+  KeyPair (..),
+  KeyRole (..),
+  hashKey,
+ )
 import Cardano.Ledger.Slot (SlotNo (..))
 import Cardano.Ledger.TreeDiff (ToExpr (toExpr), defaultExprViaShow)
 import Cardano.Prelude (unsafeShortByteStringIndex)

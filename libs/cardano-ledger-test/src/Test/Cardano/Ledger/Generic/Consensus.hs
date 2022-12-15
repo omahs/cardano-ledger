@@ -150,7 +150,7 @@ defaultLedgerExamples ::
   forall era.
   ( Reflect era
   , Default (StashedAVVMAddresses era)
-  , Default (State (Core.EraRule "PPUP" era))
+  , Default (PPUPStateOrUnit era)
   ) =>
   Proof era ->
   Core.Value era ->
@@ -409,7 +409,7 @@ exampleNewEpochState ::
   forall era.
   ( Reflect era
   , Default (StashedAVVMAddresses era)
-  , Default (State (Core.EraRule "PPUP" era))
+  , Default (PPUPStateOrUnit era)
   ) =>
   Proof era ->
   Core.Value era ->
@@ -440,7 +440,7 @@ exampleNewEpochState proof spendvalue ppp pp =
             LedgerState
               { lsUTxOState =
                   UTxOState
-                    { utxosUtxo =
+                    { sutxosUtxo =
                         UTxO $
                           Map.fromList
                             [
@@ -448,10 +448,10 @@ exampleNewEpochState proof spendvalue ppp pp =
                               , genericTxOut proof [Just (Address addr), Just (Amount spendvalue)]
                               )
                             ]
-                    , utxosDeposited = Coin 1000
-                    , utxosFees = Coin 1
-                    , utxosPpups = def
-                    , utxosStakeDistr = mempty
+                    , sutxosDeposited = Coin 1000
+                    , sutxosFees = Coin 1
+                    , sutxosPpups = def
+                    , sutxosStakeDistr = mempty
                     }
               , lsDPState = def
               }

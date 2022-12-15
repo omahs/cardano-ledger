@@ -22,7 +22,7 @@ import Byron.Spec.Ledger.Core
 import qualified Byron.Spec.Ledger.Core.Generators as CoreGen
 import Byron.Spec.Ledger.Delegation
 import qualified Byron.Spec.Ledger.GlobalParams as GP
-import Byron.Spec.Ledger.STS.UTXO (UTxOEnv (UTxOEnv, pps, utxo0), UTxOState)
+import Byron.Spec.Ledger.STS.UTXO (ShelleyUTxOState, UTxOEnv (UTxOEnv, pps, utxo0))
 import Byron.Spec.Ledger.STS.UTXOWS (UTXOWS)
 import Byron.Spec.Ledger.UTxO (UTxO, mapUTxOValues)
 import Byron.Spec.Ledger.Update hiding (delegationMap)
@@ -78,7 +78,7 @@ instance STS CHAIN where
       ( Slot
       , Seq VKeyGenesis
       , Hash
-      , UTxOState
+      , ShelleyUTxOState
       , DIState
       , UPIState
       )

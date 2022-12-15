@@ -65,6 +65,12 @@ import Cardano.Ledger.Binary (
   interns,
  )
 import Cardano.Ledger.Coin (Coin (..))
+import Cardano.Ledger.CompactAddress (
+  CompactAddr,
+  compactAddr,
+  decompactAddr,
+  fromCborBackwardsBothAddr,
+ )
 import Cardano.Ledger.Compactible
 import Cardano.Ledger.Core
 import Cardano.Ledger.Credential (Credential (..), PaymentCredential, StakeReference (..))

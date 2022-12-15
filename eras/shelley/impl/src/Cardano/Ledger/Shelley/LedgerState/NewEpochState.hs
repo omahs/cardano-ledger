@@ -50,7 +50,6 @@ import Cardano.Ledger.UTxO (
   coinBalance,
  )
 import Cardano.Ledger.Val ((<+>), (<->))
-import Control.State.Transition (STS (State))
 import Data.Default.Class (Default, def)
 import Data.Foldable (fold)
 import Data.Map.Strict (Map)
@@ -83,7 +82,7 @@ getGKeys nes = Map.keysSet genDelegs
 -- | Creates the ledger state for an empty ledger which
 --  contains the specified transaction outputs.
 genesisState ::
-  Default (State (EraRule "PPUP" era)) =>
+  Default (PPUPStateOrUnit era) =>
   Map (KeyHash 'Genesis (EraCrypto era)) (GenDelegPair (EraCrypto era)) ->
   UTxO era ->
   LedgerState era
@@ -118,7 +117,7 @@ depositPoolChange ls pp txBody = (currentPool <+> txDeposits) <-> txRefunds
     -- it could be that txDeposits < txRefunds. We keep the parenthesis above
     -- to emphasize this point.
 
-    currentPool = (utxosDeposited . lsUTxOState) ls
+    currentPool = (sutxosDeposited . lsUTxOState) ls
     txDeposits = totalTxDeposits pp (lsDPState ls) txBody
     txRefunds = keyTxRefunds pp (lsDPState ls) txBody
 
@@ -170,7 +169,7 @@ returnRedeemAddrsToReserves es = es {esAccountState = acnt', esLState = ls'}
   where
     ls = esLState es
     us = lsUTxOState ls
-    UTxO utxo = utxosUtxo us
+    UTxO utxo = sutxosUtxo us
     (redeemers, nonredeemers) =
       Map.partition (maybe False isBootstrapRedeemer . view bootAddrTxOutF) utxo
     acnt = esAccountState es
@@ -179,5 +178,5 @@ returnRedeemAddrsToReserves es = es {esAccountState = acnt', esLState = ls'}
       acnt
         { asReserves = asReserves acnt <+> coinBalance utxoR
         }
-    us' = us {utxosUtxo = UTxO nonredeemers :: UTxO era}
+    us' = us {sutxosUtxo = UTxO nonredeemers :: UTxO era}
     ls' = ls {lsUTxOState = us'}

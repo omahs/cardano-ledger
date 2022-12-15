@@ -61,11 +61,16 @@ import Cardano.Ledger.Rules.ValidationMode (Inject (..), Test, runTest)
 import Cardano.Ledger.SafeHash (SafeHash, hashAnnotated)
 import Cardano.Ledger.Shelley.AdaPots (consumedTxBody, producedTxBody)
 import Cardano.Ledger.Shelley.Era (ShelleyEra, ShelleyUTXO)
-import Cardano.Ledger.Shelley.LedgerState (DPState (..), keyTxRefunds, totalTxDeposits)
+import Cardano.Ledger.Shelley.LedgerState (DPState (..), PPUPPredFailure, UTxOState (..), keyTxRefunds, totalTxDeposits)
 import Cardano.Ledger.Shelley.LedgerState.IncrementalStake
 import Cardano.Ledger.Shelley.LedgerState.Types (UTxOState (..))
 import Cardano.Ledger.Shelley.PParams (
   PPUPState (..),
+import Cardano.Ledger.Shelley.LedgerState.Types (PPUPStateOrUnit)
+import Cardano.Ledger.Shelley.PParams (
+  PPUPState (..),
+  ShelleyPParams,
+  ShelleyPParamsHKD (..),
   Update,
  )
 import Cardano.Ledger.Shelley.Rules.Ppup (
@@ -79,6 +84,15 @@ import Cardano.Ledger.Shelley.Tx (ShelleyTx (..), TxIn)
 import Cardano.Ledger.Shelley.TxBody (
   RewardAcnt,
   ShelleyEraTxBody (..),
+import Cardano.Ledger.Shelley.Tx (
+  ShelleyTx (..),
+  ShelleyTxOut (..),
+  TxIn,
+ )
+import Cardano.Ledger.Shelley.TxBody (
+  RewardAcnt,
+  ShelleyEraTxBody (..),
+  ShelleyTxBody,
   Wdrl (..),
  )
 import Cardano.Ledger.Shelley.UTxO (produced, txup)
@@ -105,6 +119,7 @@ import Control.State.Transition (
   wrapEvent,
   wrapFailed,
  )
+import Data.Default.Class (Default)
 import Data.Foldable (foldl', toList)
 import qualified Data.Map.Strict as Map
 import Data.MapExtras (extractKeys)
@@ -157,7 +172,7 @@ data ShelleyUtxoPredFailure era
       !(Set (RewardAcnt (EraCrypto era))) -- the set of reward addresses with incorrect network IDs
   | OutputTooSmallUTxO
       ![TxOut era] -- list of supplied transaction outputs that are too small
-  | UpdateFailure (PredicateFailure (EraRule "PPUP" era)) -- Subtransition Failures
+  | UpdateFailure (PPUPPredFailure era) -- Subtransition Failures
   | OutputBootAddrAttrsTooBig
       ![TxOut era] -- list of supplied bad transaction outputs
   deriving (Generic)
@@ -165,21 +180,21 @@ data ShelleyUtxoPredFailure era
 deriving stock instance
   ( Show (Value era)
   , Show (TxOut era)
-  , Show (PredicateFailure (EraRule "PPUP" era))
+  , Show (PPUPPredFailure era)
   ) =>
   Show (ShelleyUtxoPredFailure era)
 
 deriving stock instance
   ( Eq (Value era)
   , Eq (TxOut era)
-  , Eq (PredicateFailure (EraRule "PPUP" era))
+  , Eq (PPUPPredFailure era)
   ) =>
   Eq (ShelleyUtxoPredFailure era)
 
 instance
   ( NoThunks (Value era)
   , NoThunks (TxOut era)
-  , NoThunks (PredicateFailure (EraRule "PPUP" era))
+  , NoThunks (PPUPPredFailure era)
   ) =>
   NoThunks (ShelleyUtxoPredFailure era)
 
@@ -188,7 +203,7 @@ instance
   , CC.Crypto (EraCrypto era)
   , ToCBOR (Value era)
   , ToCBOR (TxOut era)
-  , ToCBOR (PredicateFailure (EraRule "PPUP" era))
+  , ToCBOR (PPUPPredFailure era)
   ) =>
   ToCBOR (ShelleyUtxoPredFailure era)
   where
@@ -241,7 +256,7 @@ instance
 
 instance
   ( EraTxOut era
-  , FromCBOR (PredicateFailure (EraRule "PPUP" era))
+  , FromCBOR (PPUPPredFailure era)
   ) =>
   FromCBOR (ShelleyUtxoPredFailure era)
   where
@@ -292,16 +307,21 @@ instance
   , EraUTxO era
   , ShelleyEraTxBody era
   , ExactEra ShelleyEra era
+  , TxOut era ~ ShelleyTxOut era
+  , TxBody era ~ ShelleyTxBody era
+  , PParams era ~ ShelleyPParams era
   , Tx era ~ ShelleyTx era
+  , Value era ~ Coin
   , Show (ShelleyTx era)
-  , HasField "_keyDeposit" (PParams era) Coin
-  , HasField "_poolDeposit" (PParams era) Coin
-  , HasField "_maxTxSize" (PParams era) Natural
   , Embed (EraRule "PPUP" era) (ShelleyUTXO era)
   , Environment (EraRule "PPUP" era) ~ PpupEnv era
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , Signal (EraRule "PPUP" era) ~ Maybe (Update era)
+  , State (EraRule "PPUP" era) ~ PPUPState era
   , ProtVerAtMost era 8
+  , Eq (PPUPPredFailure era)
+  , Show (PPUPPredFailure era)
+  , Default (PPUPStateOrUnit era)
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   STS (ShelleyUTXO era)
   where
@@ -318,7 +338,7 @@ instance
     AssertionViolation
       { avSTS
       , avMsg
-      , avCtx = TRC (UtxoEnv _slot pp dpstate _, UTxOState {utxosDeposited, utxosUtxo}, tx)
+      , avCtx = TRC (UtxoEnv _slot pp dpstate _, UTxOState {sutxosDeposited, sutxosUtxo}, tx)
       } =
       "AssertionViolation ("
         <> avSTS
@@ -329,24 +349,24 @@ instance
         <> "\n Certs\n"
         <> showTxCerts (tx ^. bodyTxL)
         <> "\n Deposits\n"
-        <> show utxosDeposited
+        <> show sutxosDeposited
         <> "\n Consumed\n"
-        <> show (consumedTxBody (tx ^. bodyTxL) pp dpstate utxosUtxo)
+        <> show (consumedTxBody (tx ^. bodyTxL) pp dpstate sutxosUtxo)
         <> "\n Produced\n"
         <> show (producedTxBody (tx ^. bodyTxL) pp dpstate)
 
   assertions =
     [ PreCondition
         "Deposit pot must not be negative (pre)"
-        (\(TRC (_, st, _)) -> utxosDeposited st >= mempty)
+        (\(TRC (_, st, _)) -> sutxosDeposited st >= mempty)
     , PostCondition
         "UTxO must increase fee pot"
-        (\(TRC (_, st, _)) st' -> utxosFees st' >= utxosFees st)
+        (\(TRC (_, st, _)) st' -> sutxosFees st' >= sutxosFees st)
     , PostCondition
         "Deposit pot must not be negative (post)"
-        (\_ st' -> utxosDeposited st' >= mempty)
-    , let utxoBalance us = Val.inject (utxosDeposited us <> utxosFees us) <> balance (utxosUtxo us)
-          withdrawals :: TxBody era -> Value era
+        (\_ st' -> sutxosDeposited st' >= mempty)
+    , let utxoBalance us = Val.inject (sutxosDeposited us <> sutxosFees us) <> balance (sutxosUtxo us)
+          withdrawals :: ShelleyTxBody era -> Value era
           withdrawals txb = Val.inject $ foldl' (<>) mempty $ unWdrl $ txb ^. wdrlsTxBodyL
        in PostCondition
             "Should preserve value in the UTxO state"
@@ -361,6 +381,7 @@ utxoInductive ::
   , EraUTxO era
   , ShelleyEraTxBody era
   , ExactEra ShelleyEra era
+  , TxOut era ~ ShelleyTxOut era
   , STS (utxo era)
   , Embed (EraRule "PPUP" era) (utxo era)
   , BaseM (utxo era) ~ ShelleyBase
@@ -376,6 +397,7 @@ utxoInductive ::
   , HasField "_poolDeposit" (PParams era) Coin
   , HasField "_maxTxSize" (PParams era) Natural
   , ProtVerAtMost era 8
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   TransitionRule (utxo era)
 utxoInductive = do
@@ -589,32 +611,32 @@ validateMaxTxSizeUTxO pp tx =
 
 updateUTxOState ::
   forall era.
-  EraTxBody era =>
+  (EraTxBody era, PPUPStateOrUnit era ~ PPUPState era) =>
   UTxOState era ->
   TxBody era ->
   Coin ->
-  State (EraRule "PPUP" era) ->
+  PPUPState era ->
   UTxOState era
-updateUTxOState UTxOState {utxosUtxo, utxosDeposited, utxosFees, utxosStakeDistr} txb depositChange ppups =
-  let UTxO utxo = utxosUtxo
+updateUTxOState UTxOState {sutxosUtxo, sutxosDeposited, sutxosFees, sutxosStakeDistr} txb depositChange ppups =
+  let UTxO utxo = sutxosUtxo
       !utxoAdd = txouts txb -- These will be inserted into the UTxO
       {- utxoDel  = txins txb ◁ utxo -}
       !(utxoWithout, utxoDel) = extractKeys utxo (txb ^. inputsTxBodyL)
       {- newUTxO = (txins txb ⋪ utxo) ∪ outs txb -}
       newUTxO = utxoWithout `Map.union` unUTxO utxoAdd
-      newIncStakeDistro = updateStakeDistribution utxosStakeDistr (UTxO utxoDel) utxoAdd
+      newIncStakeDistro = updateStakeDistribution sutxosStakeDistr (UTxO utxoDel) utxoAdd
    in UTxOState
-        { utxosUtxo = UTxO newUTxO
-        , utxosDeposited = utxosDeposited <> depositChange
-        , utxosFees = utxosFees <> txb ^. feeTxBodyL
-        , utxosPpups = ppups
-        , utxosStakeDistr = newIncStakeDistro
+        { sutxosUtxo = UTxO newUTxO
+        , sutxosDeposited = sutxosDeposited <> depositChange
+        , sutxosFees = sutxosFees <> txb ^. feeTxBodyL
+        , sutxosPpups = ppups
+        , sutxosStakeDistr = newIncStakeDistro
         }
 
 instance
   ( Era era
   , STS (ShelleyPPUP era)
-  , PredicateFailure (EraRule "PPUP" era) ~ ShelleyPpupPredFailure era
+  , PPUPPredFailure era ~ ShelleyPpupPredFailure era
   , Event (EraRule "PPUP" era) ~ PpupEvent era
   ) =>
   Embed (ShelleyPPUP era) (ShelleyUTXO era)
@@ -625,7 +647,7 @@ instance
 -- =================================
 
 instance
-  PredicateFailure (EraRule "PPUP" era) ~ ShelleyPpupPredFailure era =>
+  PPUPPredFailure era ~ ShelleyPpupPredFailure era =>
   Inject (ShelleyPpupPredFailure era) (ShelleyUtxoPredFailure era)
   where
   inject = UpdateFailure

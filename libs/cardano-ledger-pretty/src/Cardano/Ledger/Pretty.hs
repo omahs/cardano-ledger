@@ -85,13 +85,12 @@ import Cardano.Ledger.Keys (
   GenDelegPair (..),
   GenDelegs (..),
   KeyHash (..),
+  KeyPair (..),
   KeyRole (Staking),
   VKey (..),
   VerKeyKES,
   hashKey,
  )
-
--- import Test.Cardano.Ledger.Core.KeyPair (KeyPair (..))
 import Cardano.Ledger.Keys.Bootstrap (BootstrapWitness (..), ChainCode (..))
 import Cardano.Ledger.MemoBytes (MemoBytes (..))
 import Cardano.Ledger.PoolDistr (IndividualPoolStake (..), PoolDistr (..))
@@ -107,6 +106,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   LedgerState (..),
   NewEpochState (..),
   PPUPState (..),
+  PPUPStateOrUnit,
   PState (..),
   UTxOState (..),
  )
@@ -192,7 +192,6 @@ import Cardano.Protocol.TPraos.OCert (
 import Cardano.Slotting.Slot (WithOrigin (..))
 import Cardano.Slotting.Time (SystemStart (SystemStart))
 import Codec.Binary.Bech32
-import Control.State.Transition (STS (State))
 import qualified Data.ByteString as Long (ByteString)
 import qualified Data.ByteString.Lazy as Lazy (ByteString, toStrict)
 import qualified Data.Hashable as Hashable
@@ -412,6 +411,9 @@ ppVMap pk pv = ppAssocList (text "VMap") pk pv . VMap.toList
 class PrettyA t where
   prettyA :: t -> PDoc
 
+instance PrettyA () where
+  prettyA = ppString . show
+
 -- =============================================================================
 -- END HELPER FUNCTIONS
 -- =============================================================================
@@ -624,7 +626,6 @@ instance PrettyA (RewardUpdate c) where
 type CanPrettyPrintLedgerState era =
   ( PrettyA (TxOut era)
   , PrettyA (PParams era)
-  , PrettyA (State (EraRule "PPUP" era))
   )
 
 ppAccountState :: AccountState -> PDoc
@@ -718,7 +719,9 @@ ppIncrementalStake (IStake st dangle) =
     ]
 
 ppUTxOState ::
-  CanPrettyPrintLedgerState era =>
+  ( CanPrettyPrintLedgerState era
+  , PrettyA (PPUPStateOrUnit era)
+  ) =>
   UTxOState era ->
   PDoc
 ppUTxOState (UTxOState u dep fee ppup sd) =
@@ -731,7 +734,12 @@ ppUTxOState (UTxOState u dep fee ppup sd) =
     , ("stakeDistro", ppIncrementalStake sd)
     ]
 
-ppEpochState :: CanPrettyPrintLedgerState era => EpochState era -> PDoc
+ppEpochState ::
+  ( CanPrettyPrintLedgerState era
+  , PrettyA (PPUPStateOrUnit era)
+  ) =>
+  EpochState era ->
+  PDoc
 ppEpochState (EpochState acnt snap ls prev pp non) =
   ppRecord
     "EpochState"
@@ -743,7 +751,12 @@ ppEpochState (EpochState acnt snap ls prev pp non) =
     , ("nonMyopic", ppNonMyopic non)
     ]
 
-ppNewEpochState :: CanPrettyPrintLedgerState era => NewEpochState era -> PDoc
+ppNewEpochState ::
+  ( CanPrettyPrintLedgerState era
+  , PrettyA (PPUPStateOrUnit era)
+  ) =>
+  NewEpochState era ->
+  PDoc
 ppNewEpochState (NewEpochState enum prevB curB es rewup pool _) =
   ppRecord
     "NewEpochState"
@@ -756,7 +769,9 @@ ppNewEpochState (NewEpochState enum prevB curB es rewup pool _) =
     ]
 
 ppLedgerState ::
-  CanPrettyPrintLedgerState era =>
+  ( CanPrettyPrintLedgerState era
+  , PrettyA (PPUPStateOrUnit era)
+  ) =>
   LedgerState era ->
   PDoc
 ppLedgerState (LedgerState u d) =
@@ -778,6 +793,7 @@ instance PrettyA (DState c) where
 instance
   ( Era era
   , CanPrettyPrintLedgerState era
+  , PrettyA (PPUPStateOrUnit era)
   ) =>
   PrettyA (EpochState era)
   where
@@ -786,6 +802,7 @@ instance
 instance
   ( Era era
   , CanPrettyPrintLedgerState era
+  , PrettyA (PPUPStateOrUnit era)
   ) =>
   PrettyA (NewEpochState era)
   where
@@ -800,6 +817,7 @@ instance PrettyA (InstantaneousRewards c) where
 instance
   ( Era era
   , CanPrettyPrintLedgerState era
+  , PrettyA (PPUPStateOrUnit era)
   ) =>
   PrettyA (LedgerState era)
   where
@@ -817,6 +835,7 @@ instance PrettyA (PState c) where
 instance
   ( Era era
   , CanPrettyPrintLedgerState era
+  , PrettyA (PPUPStateOrUnit era)
   ) =>
   PrettyA (UTxOState era)
   where

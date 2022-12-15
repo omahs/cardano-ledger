@@ -129,11 +129,11 @@ instance Crypto c => TranslateEra (MaryEra c) UTxOState where
   translateEra ctxt us =
     return
       UTxOState
-        { utxosUtxo = translateEra' ctxt $ utxosUtxo us
-        , utxosDeposited = utxosDeposited us
-        , utxosFees = utxosFees us
-        , utxosPpups = translateEra' ctxt $ utxosPpups us
-        , utxosStakeDistr = utxosStakeDistr us
+        { sutxosUtxo = translateEra' ctxt $ sutxosUtxo us
+        , sutxosDeposited = sutxosDeposited us
+        , sutxosFees = sutxosFees us
+        , sutxosPpups = translateEra' ctxt $ sutxosPpups us
+        , sutxosStakeDistr = sutxosStakeDistr us
         }
 
 instance Crypto c => TranslateEra (MaryEra c) ShelleyTxOut where

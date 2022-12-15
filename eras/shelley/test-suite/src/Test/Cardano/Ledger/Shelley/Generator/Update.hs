@@ -45,6 +45,7 @@ import Cardano.Ledger.Keys (
   KeyRole (..),
   asWitness,
   hashKey,
+  vKey,
  )
 import Cardano.Ledger.Shelley.API (
   ProposedPPUpdates,

@@ -46,6 +46,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   UTxOState (..),
   obligationDPState,
  )
+import Cardano.Ledger.Shelley.LedgerState.Types (PPUPStateOrUnit)
 import Cardano.Ledger.Shelley.Rules.Delegs (
   DelegsEnv (..),
   ShelleyDELEGS,
@@ -159,7 +160,6 @@ epochFromSlot slot = do
 instance
   ( Show (PParams era)
   , Show (TxOut era)
-  , Show (State (EraRule "PPUP" era))
   , DSignable (EraCrypto era) (Hash (EraCrypto era) EraIndependentTxBody)
   , EraTx era
   , ShelleyEraTxBody era
@@ -174,6 +174,7 @@ instance
   , HasField "_keyDeposit" (PParams era) Coin
   , HasField "_poolDeposit" (PParams era) Coin
   , ProtVerAtMost era 8
+  , Show (PPUPStateOrUnit era)
   ) =>
   STS (ShelleyLEDGER era)
   where
@@ -199,7 +200,7 @@ instance
       <> "\n"
       <> seq (show avState) "avState"
       <> "\n Deposits "
-      <> show (utxosDeposited <$> (lsUTxOState <$> avState))
+      <> show (sutxosDeposited <$> (lsUTxOState <$> avState))
       <> "\n dsDeposits\n"
       <> synopsisCoinMap (dsDeposits <$> (dpsDState <$> (lsDPState <$> avState)))
       <> "\n"
@@ -212,7 +213,7 @@ instance
         "Deposit pot must equal obligation"
         ( \(TRC (_, _, _))
            (LedgerState utxoSt dpstate) ->
-              obligationDPState dpstate == utxosDeposited utxoSt
+              obligationDPState dpstate == sutxosDeposited utxoSt
         )
     ]
 

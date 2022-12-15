@@ -137,7 +137,7 @@ import NoThunks.Class (NoThunks (..))
 
 data ShelleyTxBodyRaw era = ShelleyTxBodyRaw
   { stbrInputs :: !(Set (TxIn (EraCrypto era)))
-  , stbrOutputs :: !(StrictSeq (TxOut era))
+  , stbrOutputs :: !(StrictSeq (ShelleyTxOut era))
   , stbrCerts :: !(StrictSeq (DCert (EraCrypto era)))
   , stbrWdrls :: !(Wdrl (EraCrypto era))
   , stbrTxFee :: !Coin
@@ -165,8 +165,10 @@ deriving instance
 
 instance
   ( Era era
-  , FromCBOR (TxOut era)
   , FromCBOR (PParamsUpdate era)
+  , DecodeNonNegative (Value era)
+  , Compactible (Value era)
+  , Show (Value era)
   ) =>
   FromCBOR (ShelleyTxBodyRaw era)
   where
@@ -181,8 +183,10 @@ instance
 
 instance
   ( Era era
-  , FromCBOR (TxOut era)
   , FromCBOR (PParamsUpdate era)
+  , DecodeNonNegative (Value era)
+  , Compactible (Value era)
+  , Show (Value era)
   ) =>
   FromCBOR (Annotator (ShelleyTxBodyRaw era))
   where
@@ -198,8 +202,10 @@ instance
 --   changes only the field being deserialised.
 boxBody ::
   ( Era era
-  , FromCBOR (TxOut era)
   , FromCBOR (PParamsUpdate era)
+  , DecodeNonNegative (Value era)
+  , Compactible (Value era)
+  , Show (Value era)
   ) =>
   Word ->
   Field (ShelleyTxBodyRaw era)

@@ -118,7 +118,7 @@ deriving newtype instance
   NoThunks (MaryTxBody era)
 
 deriving newtype instance
-  ( NFData (TxOut era)
+  ( NFData (Value era)
   , NFData (PParamsUpdate era)
   , Era era
   ) =>

@@ -48,6 +48,7 @@ import Cardano.Ledger.Rules.ValidationMode (
   runTest,
  )
 import Cardano.Ledger.Shelley.LedgerState (PPUPState, keyTxRefunds, totalTxDeposits)
+import Cardano.Ledger.Shelley.LedgerState (PPUPPredFailure, PPUPState, PPUPStateOrUnit, keyTxRefunds, totalTxDeposits)
 import qualified Cardano.Ledger.Shelley.LedgerState as Shelley
 import Cardano.Ledger.Shelley.PParams (ShelleyPParams, ShelleyPParamsHKD (..), Update)
 import Cardano.Ledger.Shelley.Rules (PpupEnv (..), ShelleyPPUP, ShelleyPpupPredFailure)
@@ -99,7 +100,7 @@ data AllegraUtxoPredFailure era
       !(Set (RewardAcnt (EraCrypto era))) -- the set of reward addresses with incorrect network IDs
   | OutputTooSmallUTxO
       ![TxOut era] -- list of supplied transaction outputs that are too small
-  | UpdateFailure !(PredicateFailure (EraRule "PPUP" era)) -- Subtransition Failures
+  | UpdateFailure !(PPUPPredFailure era) -- Subtransition Failures
   | OutputBootAddrAttrsTooBig
       ![TxOut era] -- list of supplied bad transaction outputs
   | -- Kept for backwards compatibility: no longer used because the `MultiAsset` type of mint doesn't allow for this possibility
@@ -112,7 +113,7 @@ deriving stock instance
   ( Show (TxOut era)
   , Show (Value era)
   , Show (Shelley.UTxOState era)
-  , Show (PredicateFailure (EraRule "PPUP" era))
+  , Show (PPUPPredFailure era)
   ) =>
   Show (AllegraUtxoPredFailure era)
 
@@ -120,7 +121,7 @@ deriving stock instance
   ( Eq (TxOut era)
   , Eq (Value era)
   , Eq (Shelley.UTxOState era)
-  , Eq (PredicateFailure (EraRule "PPUP" era))
+  , Eq (PPUPPredFailure era)
   ) =>
   Eq (AllegraUtxoPredFailure era)
 
@@ -128,7 +129,7 @@ instance
   ( NoThunks (TxOut era)
   , NoThunks (Value era)
   , NoThunks (Shelley.UTxOState era)
-  , NoThunks (PredicateFailure (EraRule "PPUP" era))
+  , NoThunks (PPUPPredFailure era)
   ) =>
   NoThunks (AllegraUtxoPredFailure era)
 
@@ -151,6 +152,7 @@ utxoTransition ::
   , HasField "_poolDeposit" (PParams era) Coin
   , HasField "_maxTxSize" (PParams era) Natural
   , ProtVerAtMost era 8
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   TransitionRule (AllegraUTXO era)
 utxoTransition = do
@@ -275,6 +277,9 @@ instance
   , State (EraRule "PPUP" era) ~ PPUPState era
   , Signal (EraRule "PPUP" era) ~ Maybe (Update era)
   , ProtVerAtMost era 8
+  , Eq (PPUPPredFailure era)
+  , Show (PPUPPredFailure era)
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   STS (AllegraUTXO era)
   where
@@ -291,7 +296,7 @@ instance
 instance
   ( Era era
   , STS (ShelleyPPUP era)
-  , PredicateFailure (EraRule "PPUP" era) ~ ShelleyPpupPredFailure era
+  , PPUPPredFailure era ~ ShelleyPpupPredFailure era
   , Event (EraRule "PPUP" era) ~ Event (ShelleyPPUP era)
   ) =>
   Embed (ShelleyPPUP era) (AllegraUTXO era)
@@ -308,7 +313,7 @@ instance
   , ToCBOR (Value era)
   , ToCBOR (TxOut era)
   , ToCBOR (Shelley.UTxOState era)
-  , ToCBOR (PredicateFailure (EraRule "PPUP" era))
+  , ToCBOR (PPUPPredFailure era)
   ) =>
   ToCBOR (AllegraUtxoPredFailure era)
   where
@@ -366,7 +371,7 @@ instance
 
 instance
   ( EraTxOut era
-  , FromCBOR (PredicateFailure (EraRule "PPUP" era))
+  , FromCBOR (PPUPPredFailure era)
   ) =>
   FromCBOR (AllegraUtxoPredFailure era)
   where

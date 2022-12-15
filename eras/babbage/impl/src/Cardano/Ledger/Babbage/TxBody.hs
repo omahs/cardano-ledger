@@ -134,10 +134,18 @@ import Cardano.Ledger.Binary (
   FromCBOR (..),
   Sized (..),
   ToCBOR (..),
+  decodeMap,
+  decodeSized,
+  decodeStrictSeq,
   mkSized,
  )
 import Cardano.Ledger.Binary.Coders
 import Cardano.Ledger.Coin (Coin (..))
+import Cardano.Ledger.CompactAddress (
+  fromCborBothAddr,
+  fromCborRewardAcnt,
+ )
+import Cardano.Ledger.Compactible
 import Cardano.Ledger.Core
 import Cardano.Ledger.Crypto
 import Cardano.Ledger.Keys (KeyHash (..), KeyRole (..))
@@ -180,8 +188,8 @@ data BabbageTxBodyRaw era = BabbageTxBodyRaw
   { btbrSpendInputs :: !(Set (TxIn (EraCrypto era)))
   , btbrCollateralInputs :: !(Set (TxIn (EraCrypto era)))
   , btbrReferenceInputs :: !(Set (TxIn (EraCrypto era)))
-  , btbrOutputs :: !(StrictSeq (Sized (TxOut era)))
-  , btbrCollateralReturn :: !(StrictMaybe (Sized (TxOut era)))
+  , btbrOutputs :: !(StrictSeq (Sized (BabbageTxOut era)))
+  , btbrCollateralReturn :: !(StrictMaybe (Sized (BabbageTxOut era)))
   , btbrTotalCollateral :: !(StrictMaybe Coin)
   , btbrCerts :: !(StrictSeq (DCert (EraCrypto era)))
   , btbrWdrls :: !(Wdrl (EraCrypto era))
@@ -483,11 +491,21 @@ deriving instance
 deriving via
   (Mem BabbageTxBodyRaw era)
   instance
-    (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+    ( Era era
+    , Val (Value era)
+    , DecodeNonNegative (Value era)
+    , FromCBOR (PParamsUpdate era)
+    , FromCBOR (Annotator (Script era))
+    ) =>
     FromCBOR (Annotator (BabbageTxBody era))
 
 instance
-  (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+  ( Era era
+  , Val (Value era)
+  , DecodeNonNegative (Value era)
+  , FromCBOR (PParamsUpdate era)
+  , FromCBOR (Annotator (Script era))
+  ) =>
   FromCBOR (Annotator (BabbageTxBodyRaw era))
   where
   fromCBOR = pure <$> fromCBOR
@@ -701,7 +719,12 @@ instance
           !> encodeKeyedStrictMaybe 15 btbrTxNetworkId
 
 instance
-  (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+  ( Era era
+  , Val (Value era)
+  , DecodeNonNegative (Value era)
+  , FromCBOR (Annotator (Script era))
+  , FromCBOR (PParamsUpdate era)
+  ) =>
   FromCBOR (BabbageTxBodyRaw era)
   where
   fromCBOR =

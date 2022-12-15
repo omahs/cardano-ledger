@@ -12,6 +12,7 @@ module Test.Cardano.Ledger.Shelley.Serialisation.Generators () where
 
 import Cardano.Ledger.Core
 import Cardano.Ledger.Shelley.API (ShelleyTxBody (ShelleyTxBody))
+import Cardano.Ledger.Shelley.LedgerState (PPUPPredFailure)
 import Cardano.Ledger.Shelley.PParams (ShelleyPParams)
 import qualified Cardano.Ledger.Shelley.Rules as STS
 import Generic.Random (genericArbitraryU)
@@ -50,7 +51,7 @@ instance
   , Mock (EraCrypto era)
   , Arbitrary (Value era)
   , Arbitrary (TxOut era)
-  , Arbitrary (STS.PredicateFailure (EraRule "PPUP" era))
+  , Arbitrary (PPUPPredFailure era)
   ) =>
   Arbitrary (STS.ShelleyUtxoPredFailure era)
   where

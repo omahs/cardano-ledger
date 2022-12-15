@@ -332,7 +332,7 @@ refundPoolDeposit keyhash pstate = (coin, pstate {psDeposits = newpool})
       Nothing -> (mempty, pool)
 
 -- | Calculate total possible refunds in the system. There is an invariant that
---   this should be the same as the utxosDeposited field of the UTxOState. Note that
+--   this should be the same as the sutxosDeposited field of the UTxOState. Note that
 --   this does not depend upon the current values of the Key and Pool deposits of the PParams.
 obligationDPState :: DPState era -> Coin
 obligationDPState (DPState DState {dsDeposits = keys} PState {psDeposits = stakePools}) =

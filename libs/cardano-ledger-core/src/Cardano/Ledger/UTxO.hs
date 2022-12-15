@@ -28,6 +28,12 @@ module Cardano.Ledger.UTxO (
   sumAllValue,
   sumAllCoin,
   areAllAdaOnly,
+<<<<<<< HEAD
+=======
+  makeWitnessVKey,
+  makeWitnessesVKey,
+  makeWitnessesFromScriptKeys,
+>>>>>>> fd3e7ffb8 (WIP)
   verifyWitVKey,
   getScriptHash,
 )
@@ -51,7 +57,15 @@ import Cardano.Ledger.DPState (DPState)
 import Cardano.Ledger.Keys (
   DSignable,
   Hash,
+<<<<<<< HEAD
   KeyRole (..),
+=======
+  KeyHash (..),
+  KeyPair (..),
+  KeyRole (..),
+  asWitness,
+  signedDSIGN,
+>>>>>>> fd3e7ffb8 (WIP)
   verifySignedDSIGN,
  )
 import Cardano.Ledger.Keys.WitVKey
@@ -157,6 +171,44 @@ verifyWitVKey ::
   Bool
 verifyWitVKey txbodyHash (WitVKey vkey sig) = verifySignedDSIGN vkey txbodyHash (coerce sig)
 
+<<<<<<< HEAD
+=======
+-- | Create a witness for transaction
+makeWitnessVKey ::
+  forall c kr.
+  ( Crypto c
+  , DSignable c (CH.Hash (HASH c) EraIndependentTxBody)
+  ) =>
+  SafeHash c EraIndependentTxBody ->
+  KeyPair kr c ->
+  WitVKey 'Witness c
+makeWitnessVKey safe keys =
+  WitVKey (asWitness $ vKey keys) (coerce $ signedDSIGN @c (sKey keys) (extractHash safe))
+
+-- | Create witnesses for transaction
+makeWitnessesVKey ::
+  forall c kr.
+  ( Crypto c
+  , DSignable c (CH.Hash (HASH c) EraIndependentTxBody)
+  ) =>
+  SafeHash c EraIndependentTxBody ->
+  [KeyPair kr c] ->
+  Set (WitVKey 'Witness c)
+makeWitnessesVKey safe xs = Set.fromList (fmap (makeWitnessVKey safe) xs)
+
+-- | From a list of key pairs and a set of key hashes required for a multi-sig
+-- scripts, return the set of required keys.
+makeWitnessesFromScriptKeys ::
+  (Crypto c, DSignable c (Hash c EraIndependentTxBody)) =>
+  SafeHash c EraIndependentTxBody ->
+  Map (KeyHash kr c) (KeyPair kr c) ->
+  Set (KeyHash kr c) ->
+  Set (WitVKey 'Witness c)
+makeWitnessesFromScriptKeys txbodyHash hashKeyMap scriptHashes =
+  let witKeys = Map.restrictKeys hashKeyMap scriptHashes
+   in makeWitnessesVKey txbodyHash (Map.elems witKeys)
+
+>>>>>>> fd3e7ffb8 (WIP)
 -- | Determine the total balance contained in the UTxO.
 balance :: EraTxOut era => UTxO era -> Value era
 balance = sumAllValue . unUTxO

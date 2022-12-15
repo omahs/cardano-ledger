@@ -37,7 +37,7 @@ import Cardano.Ledger.Core (
 import qualified Cardano.Ledger.Core as Core
 import Cardano.Ledger.Crypto (Crypto, DSIGN)
 import Cardano.Ledger.Shelley.API hiding (SignedDSIGN)
-import Cardano.Ledger.Shelley.LedgerState (FutureGenDeleg, StashedAVVMAddresses)
+import Cardano.Ledger.Shelley.LedgerState (FutureGenDeleg, PPUPStateOrUnit, StashedAVVMAddresses)
 import Cardano.Ledger.Shelley.PoolRank (
   Likelihood (..),
   LogWeight (..),
@@ -65,7 +65,6 @@ import qualified Cardano.Protocol.TPraos.OCert as TP
 import qualified Cardano.Protocol.TPraos.Rules.Overlay as STS
 import qualified Cardano.Protocol.TPraos.Rules.Prtcl as STS (PrtclState)
 import qualified Cardano.Protocol.TPraos.Rules.Tickn as STS
-import Control.State.Transition (STS (State))
 import qualified Data.ListMap as LM
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as T
@@ -285,7 +284,7 @@ instance
   ( Core.EraTxOut era
   , Mock (EraCrypto era)
   , Arbitrary (Core.TxOut era)
-  , Arbitrary (State (Core.EraRule "PPUP" era))
+  , Arbitrary (PPUPStateOrUnit era)
   ) =>
   Arbitrary (UTxOState era)
   where
@@ -312,7 +311,7 @@ instance
   ( Core.EraTxOut era
   , Mock (EraCrypto era)
   , Arbitrary (Core.TxOut era)
-  , Arbitrary (State (Core.EraRule "PPUP" era))
+  , Arbitrary (PPUPStateOrUnit era)
   ) =>
   Arbitrary (LedgerState era)
   where
@@ -325,8 +324,8 @@ instance
   , Arbitrary (Core.TxOut era)
   , Arbitrary (Core.Value era)
   , Arbitrary (Core.PParams era)
-  , Arbitrary (State (Core.EraRule "PPUP" era))
   , Arbitrary (StashedAVVMAddresses era)
+  , Arbitrary (PPUPStateOrUnit era)
   ) =>
   Arbitrary (NewEpochState era)
   where
@@ -338,7 +337,7 @@ instance
   , Arbitrary (Core.TxOut era)
   , Arbitrary (Core.Value era)
   , Arbitrary (Core.PParams era)
-  , Arbitrary (State (Core.EraRule "PPUP" era))
+  , Arbitrary (PPUPStateOrUnit era)
   ) =>
   Arbitrary (EpochState era)
   where

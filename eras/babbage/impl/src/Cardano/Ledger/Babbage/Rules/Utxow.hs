@@ -41,6 +41,7 @@ import Cardano.Ledger.Babbage.Tx (refScripts)
 import Cardano.Ledger.Babbage.TxBody (
   BabbageEraTxBody (..),
   BabbageEraTxOut (..),
+  BabbageTxOut (..),
  )
 import Cardano.Ledger.BaseTypes (ProtVer, ShelleyBase, quorum, strictMaybeToMaybe)
 import Cardano.Ledger.Binary (FromCBOR (..), ToCBOR (..))
@@ -229,6 +230,7 @@ validateScriptsWellFormed ::
   ( EraTx era
   , BabbageEraTxBody era
   , Script era ~ AlonzoScript era
+  , TxOut era ~ BabbageTxOut era
   ) =>
   PParams era ->
   Tx era ->
@@ -265,6 +267,7 @@ babbageUtxowTransition ::
   , EraUTxO era
   , ScriptsNeeded era ~ AlonzoScriptsNeeded era
   , Script era ~ AlonzoScript era
+  , TxOut era ~ BabbageTxOut era
   , STS (BabbageUTXOW era)
   , BabbageEraTxBody era
   , HasField "_costmdls" (PParams era) CostModels
@@ -272,9 +275,8 @@ babbageUtxowTransition ::
   , -- Allow UTXOW to call UTXO
     Embed (EraRule "UTXO" era) (BabbageUTXOW era)
   , Environment (EraRule "UTXO" era) ~ UtxoEnv era
-  , State (EraRule "UTXO" era) ~ UTxOState era
   , Signal (EraRule "UTXO" era) ~ Tx era
-  , ProtVerAtMost era 8
+  , State (EraRule "UTXO" era) ~ UTxOState era
   ) =>
   TransitionRule (BabbageUTXOW era)
 babbageUtxowTransition = do
@@ -284,7 +286,7 @@ babbageUtxowTransition = do
   {-  txb := txbody tx  -}
   {-  txw := txwits tx  -}
   {-  witsKeyHashes := { hashKey vk | vk ∈ dom(txwitsVKey txw) }  -}
-  let utxo = utxosUtxo u
+  let utxo = sutxosUtxo u
       txBody = tx ^. bodyTxL
       witsKeyHashes = witsFromTxWitnesses @era tx
       hashScriptMap = txscripts utxo tx
@@ -365,6 +367,7 @@ instance
   , EraUTxO era
   , ScriptsNeeded era ~ AlonzoScriptsNeeded era
   , BabbageEraTxBody era
+  , TxOut era ~ BabbageTxOut era
   , HasField "_costmdls" (PParams era) CostModels
   , HasField "_protocolVersion" (PParams era) ProtVer
   , Signable (DSIGN (EraCrypto era)) (Hash (HASH (EraCrypto era)) EraIndependentTxBody)
@@ -376,7 +379,6 @@ instance
   , Signal (EraRule "UTXO" era) ~ Tx era
   , Eq (PredicateFailure (EraRule "UTXOS" era))
   , Show (PredicateFailure (EraRule "UTXOS" era))
-  , ProtVerAtMost era 8
   ) =>
   STS (BabbageUTXOW era)
   where

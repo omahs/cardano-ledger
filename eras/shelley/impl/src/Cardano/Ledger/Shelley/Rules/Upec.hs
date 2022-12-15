@@ -27,7 +27,7 @@ import Cardano.Ledger.Shelley.Era (ShelleyUPEC)
 import Cardano.Ledger.Shelley.LedgerState (
   EpochState,
   PPUPState (..),
-  UTxOState (utxosPpups),
+  UTxOState (sutxosPpups),
   UpecState (..),
   esLState,
   lsDPState,
@@ -35,6 +35,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   pattern DPState,
   pattern EpochState,
  )
+import Cardano.Ledger.Shelley.LedgerState.Types (PPUPStateOrUnit)
 import Cardano.Ledger.Shelley.PParams (ProposedPPUpdates (..))
 import Cardano.Ledger.Shelley.Rules.Newpp (NewppEnv (..), ShelleyNEWPP, ShelleyNewppState (..))
 import Control.Monad.Trans.Reader (asks)
@@ -63,7 +64,7 @@ instance NoThunks (ShelleyUpecPredFailure era)
 instance
   ( EraPParams era
   , Default (PParams era)
-  , State (EraRule "PPUP" era) ~ PPUPState era
+  , PPUPStateOrUnit era ~ PPUPState era
   , HasField "_keyDeposit" (PParams era) Coin
   , HasField "_maxBBSize" (PParams era) Natural
   , HasField "_maxTxSize" (PParams era) Natural
@@ -95,7 +96,7 @@ instance
 
         let utxoSt = lsUTxOState ls
             DPState dstate pstate = lsDPState ls
-            pup = proposals . utxosPpups $ utxoSt
+            pup = proposals . sutxosPpups $ utxoSt
             ppNew = votedValue pup pp (fromIntegral coreNodeQuorum)
         NewppState pp' ppupSt' <-
           trans @(ShelleyNEWPP era) $

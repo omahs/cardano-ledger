@@ -139,11 +139,11 @@ utxo0 =
 utxoState0 :: UTxOState C
 utxoState0 =
   UTxOState
-    { utxosUtxo = utxo0
-    , utxosDeposited = Coin 0
-    , utxosFees = Coin 0
-    , utxosPpups = PPUPState (ProposedPPUpdates mempty) (ProposedPPUpdates mempty)
-    , utxosStakeDistr = mempty
+    { sutxosUtxo = utxo0
+    , sutxosDeposited = Coin 0
+    , sutxosFees = Coin 0
+    , sutxosPpups = PPUPState (ProposedPPUpdates mempty) (ProposedPPUpdates mempty)
+    , sutxosStakeDistr = mempty
     }
 
 tx :: ShelleyTx C
@@ -155,11 +155,11 @@ txBad = ShelleyTx txBody mempty {bootWits = Set.fromList [aliceBadWitness]} SNot
 utxoState1 :: UTxOState C
 utxoState1 =
   UTxOState
-    { utxosUtxo = UTxO $ Map.fromList [bobResult, aliceResult]
-    , utxosDeposited = Coin 0
-    , utxosFees = Coin 10
-    , utxosPpups = PPUPState (ProposedPPUpdates mempty) (ProposedPPUpdates mempty)
-    , utxosStakeDistr = IStake mempty mempty
+    { sutxosUtxo = UTxO $ Map.fromList [bobResult, aliceResult]
+    , sutxosDeposited = Coin 0
+    , sutxosFees = Coin 10
+    , sutxosPpups = PPUPState (ProposedPPUpdates mempty) (ProposedPPUpdates mempty)
+    , sutxosStakeDistr = IStake mempty mempty
     }
   where
     txid = TxId $ hashAnnotated txBody

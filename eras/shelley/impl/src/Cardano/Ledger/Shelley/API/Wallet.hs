@@ -147,7 +147,7 @@ import Numeric.Natural (Natural)
 getUTxO ::
   NewEpochState era ->
   UTxO era
-getUTxO = utxosUtxo . lsUTxOState . esLState . nesEs
+getUTxO = sutxosUtxo . lsUTxOState . esLState . nesEs
 
 -- | Get the UTxO filtered by address.
 getFilteredUTxO ::
@@ -307,7 +307,7 @@ currentSnapshot ss =
   incrementalStakeDistr incrementalStake dstate pstate
   where
     ledgerState = esLState $ nesEs ss
-    incrementalStake = utxosStakeDistr $ lsUTxOState ledgerState
+    incrementalStake = sutxosStakeDistr $ lsUTxOState ledgerState
     dstate = dpsDState $ lsDPState ledgerState
     pstate = dpsPState $ lsDPState ledgerState
 

@@ -19,7 +19,7 @@ import Byron.Spec.Ledger.Delegation (
   DState (..),
  )
 import Byron.Spec.Ledger.GlobalParams (lovelaceCap)
-import Byron.Spec.Ledger.STS.UTXO (UTxOEnv (..), UTxOState (..))
+import Byron.Spec.Ledger.STS.UTXO (ShelleyUTxOState (..), UTxOEnv (..))
 import Byron.Spec.Ledger.STS.UTXOWS (UTXOWS)
 import qualified Byron.Spec.Ledger.UTxO as Abstract
 import Cardano.Chain.Block (
@@ -180,11 +180,11 @@ genBlockValidationMode = Gen.element [BlockValidation, NoBlockValidation]
 -- Helpers
 --------------------------------------------------------------------------------
 
-createInitialUTxOState ::
+createInitialShelleyUTxOState ::
   Environment UTXOWS ->
   State UTXOWS
-createInitialUTxOState utxoEnv =
-  UTxOState {utxo = utxo0, reserves = lovelaceCap - Abstract.balance utxo0}
+createInitialShelleyUTxOState utxoEnv =
+  ShelleyUTxOState {utxo = utxo0, reserves = lovelaceCap - Abstract.balance utxo0}
   where
     UTxOEnv
       { utxo0

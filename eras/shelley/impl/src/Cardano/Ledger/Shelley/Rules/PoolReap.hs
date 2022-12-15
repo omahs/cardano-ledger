@@ -103,7 +103,7 @@ instance
     [ PostCondition
         "Deposit pot must equal obligation"
         ( \(TRC (_, _, _)) st ->
-            obligationDPState (DPState (prDState st) (prPState st)) == utxosDeposited (prUTxOSt st)
+            obligationDPState (DPState (prDState st) (prPState st)) == sutxosDeposited (prUTxOSt st)
         )
     , PostCondition
         "PoolReap may not create or remove reward accounts"
@@ -163,7 +163,7 @@ poolReapTransition = do
           }
   pure $
     PoolreapState
-      us {utxosDeposited = utxosDeposited us <-> (unclaimed <+> refunded)}
+      us {sutxosDeposited = sutxosDeposited us <-> (unclaimed <+> refunded)}
       a {asTreasury = asTreasury a <+> unclaimed}
       ( let u0 = dsUnified ds
             u1 = Rewards u0 UM.∪+ Map.map compactCoinOrError refunds

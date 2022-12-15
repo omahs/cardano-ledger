@@ -45,6 +45,8 @@ import Cardano.Ledger.Shelley.LedgerState (
   EpochState (..),
   LedgerState (..),
   NewEpochState (..),
+  PPUPState,
+  PPUPStateOrUnit,
   PState (..),
   StashedAVVMAddresses,
   UTxOState (..),
@@ -54,7 +56,6 @@ import Cardano.Ledger.Shelley.Tx (ShelleyTx (..))
 import Cardano.Ledger.Shelley.TxBody (ShelleyTxBody (..), Wdrl (..))
 import Cardano.Ledger.Shelley.TxWits (ShelleyTxWits (..))
 import Cardano.Ledger.UTxO (UTxO (..))
-import Control.State.Transition.Extended (STS (..), State)
 import Data.Foldable (toList)
 import Data.Maybe.Strict (StrictMaybe)
 import Prettyprinter (Doc, indent, viaShow, vsep)
@@ -140,7 +141,7 @@ sameUTxO (Babbage _) x y = eqByShow x y
 sameUTxO (Conway _) x y = eqByShow x y
 {-# NOINLINE sameUTxO #-}
 
-samePPUP :: Proof era -> State (EraRule "PPUP" era) -> State (EraRule "PPUP" era) -> Maybe PDoc
+samePPUP :: Proof era -> PPUPState era -> PPUPState era -> Maybe PDoc
 samePPUP (Shelley _) x y = eqByShow x y
 samePPUP (Allegra _) x y = eqByShow x y
 samePPUP (Mary _) x y = eqByShow x y
@@ -149,21 +150,34 @@ samePPUP (Babbage _) x y = eqByShow x y
 samePPUP (Conway _) x y = eqByShow x y
 {-# NOINLINE samePPUP #-}
 
-instance (Era era) => Same era (UTxOState era) where
+instance (Era era, Reflect era) => Same era (UTxOState era) where
   same proof u1 u2 =
-    [ ("UTxO", sameUTxO proof (utxosUtxo u1) (utxosUtxo u2))
-    , ("Deposited", eqByShow (utxosDeposited u1) (utxosDeposited u2))
-    , ("Fees", eqByShow (utxosFees u1) (utxosFees u2))
-    , ("PPUpdates", samePPUP proof (utxosPpups u1) (utxosPpups u2))
-    , ("StakeDistr", eqByShow (utxosStakeDistr u1) (utxosStakeDistr u2))
+    [ ("UTxO", sameUTxO proof (sutxosUtxo u1) (sutxosUtxo u2))
+    , ("Deposited", eqByShow (sutxosDeposited u1) (sutxosDeposited u2))
+    , ("Fees", eqByShow (sutxosFees u1) (sutxosFees u2))
     ]
+      ++ ppu
+      ++ [
+           --
+           ("StakeDistr", eqByShow (sutxosStakeDistr u1) (sutxosStakeDistr u2))
+         ]
+    where
+      ppuPretty :: PPUPState era ~ PPUPStateOrUnit era => [(String, Maybe PDoc)]
+      ppuPretty = [("PPUpdates", samePPUP proof (sutxosPpups u1) (sutxosPpups u2))]
+      ppu = case reify @era of
+        Shelley _ -> ppuPretty
+        Mary _ -> ppuPretty
+        Allegra _ -> ppuPretty
+        Alonzo _ -> ppuPretty
+        Babbage _ -> ppuPretty
+        Conway _ -> []
 
-instance (Era era) => Same era (LedgerState era) where
+instance (Era era, Reflect era) => Same era (LedgerState era) where
   same proof x1 x2 =
     extendLabel "UTxOState " (same proof (lsUTxOState x1) (lsUTxOState x2))
       ++ extendLabel "DPState " (same proof (lsDPState x1) (lsDPState x2))
 
-instance (Era era) => Same era (EpochState era) where
+instance (Era era, Reflect era) => Same era (EpochState era) where
   same proof e1 e2 =
     [ ("AccountState", eqByShow (esAccountState e1) (esAccountState e2))
     , ("SnapShots", eqByShow (esSnapshots e1) (esSnapshots e2))
@@ -186,6 +200,7 @@ sameStashedAVVMAddresses proof x y =
 
 instance
   ( Era era
+  , Reflect era
   ) =>
   Same era (NewEpochState era)
   where

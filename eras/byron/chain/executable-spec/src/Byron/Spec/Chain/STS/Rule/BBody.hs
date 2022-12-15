@@ -20,6 +20,7 @@ import Byron.Spec.Ledger.Delegation (
   _dSEnvSlot,
  )
 import Byron.Spec.Ledger.STS.UTXO (UTxOEnv (UTxOEnv, pps, utxo0), UTxOState)
+import Byron.Spec.Ledger.STS.UTXO (ShelleyUTxOState, UTxOEnv (UTxOEnv, pps, utxo0))
 import Byron.Spec.Ledger.STS.UTXOWS (UTXOWS)
 import Byron.Spec.Ledger.UTxO (UTxO)
 import Byron.Spec.Ledger.Update (PParams, UPIState, maxBkSz)
@@ -68,7 +69,7 @@ instance STS BBODY where
 
   type
     State BBODY =
-      ( UTxOState
+      ( ShelleyUTxOState
       , DIState
       , UPIState
       )

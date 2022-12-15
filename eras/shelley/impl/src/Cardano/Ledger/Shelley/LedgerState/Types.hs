@@ -51,19 +51,20 @@ import Cardano.Ledger.Keys (
 import Cardano.Ledger.PoolDistr (PoolDistr (..))
 import Cardano.Ledger.SafeHash (HashAnnotated)
 import Cardano.Ledger.Shelley.Era (ShelleyEra)
+import Cardano.Ledger.Shelley.PParams (PPUPState (..))
 import Cardano.Ledger.Shelley.PoolRank (
   NonMyopic (..),
  )
 import Cardano.Ledger.Shelley.RewardUpdate (
   PulsingRewUpdate (..),
  )
+import Cardano.Ledger.Shelley.Rules.Ppup (ShelleyPpupPredFailure)
 import Cardano.Ledger.Slot (EpochNo (..))
 import Cardano.Ledger.TreeDiff (ToExpr)
 import Cardano.Ledger.UTxO (UTxO (..))
 import Control.DeepSeq (NFData)
 import Control.Monad.State.Strict (evalStateT)
 import Control.Monad.Trans (MonadTrans (lift))
-import Control.State.Transition (STS (State))
 import Data.Default.Class (Default, def)
 import Data.Group (Group, invert)
 import Data.Map.Strict (Map)
@@ -117,7 +118,8 @@ deriving stock instance
   ( CC.Crypto (EraCrypto era)
   , Show (TxOut era)
   , Show (PParams era)
-  , Show (State (EraRule "PPUP" era))
+  , Show (PParamsUpdate era)
+  , Show (PPUPStateOrUnit era)
   ) =>
   Show (EpochState era)
 
@@ -125,16 +127,18 @@ deriving stock instance
   ( CC.Crypto (EraCrypto era)
   , Eq (TxOut era)
   , Eq (PParams era)
-  , Eq (State (EraRule "PPUP" era))
+  , Eq (PParamsUpdate era)
+  , Eq (PPUPStateOrUnit era)
   ) =>
   Eq (EpochState era)
 
 instance
   ( Era era
   , NoThunks (TxOut era)
-  , NoThunks (State (EraRule "PPUP" era))
   , NoThunks (Value era)
   , NoThunks (PParams era)
+  , NoThunks (PParamsUpdate era)
+  , NoThunks (PPUPStateOrUnit era)
   , ToCBOR (TxBody era)
   , ToCBOR (TxOut era)
   , ToCBOR (Value era)
@@ -145,7 +149,8 @@ instance
   ( Era era
   , NFData (TxOut era)
   , NFData (PParams era)
-  , NFData (State (EraRule "PPUP" era))
+  , NFData (PParamsUpdate era)
+  , NFData (PPUPStateOrUnit era)
   ) =>
   NFData (EpochState era)
 
@@ -153,7 +158,8 @@ instance
   ( Era era
   , ToCBOR (TxOut era)
   , ToCBOR (PParams era)
-  , ToCBOR (State (EraRule "PPUP" era))
+  , ToCBOR (PParamsUpdate era)
+  , ToCBOR (PPUPStateOrUnit era)
   ) =>
   ToCBOR (EpochState era)
   where
@@ -169,10 +175,11 @@ instance
 instance
   ( FromCBOR (Value era)
   , FromCBOR (PParams era)
+  , FromCBOR (PParamsUpdate era)
+  , FromCBOR (PPUPStateOrUnit era)
   , HashAnnotated (TxBody era) EraIndependentTxBody (EraCrypto era)
   , FromSharedCBOR (TxOut era)
   , Share (TxOut era) ~ Interns (Credential 'Staking (EraCrypto era))
-  , FromCBOR (State (EraRule "PPUP" era))
   , Era era
   ) =>
   FromCBOR (EpochState era)
@@ -191,12 +198,12 @@ instance
 data UpecState era = UpecState
   { currentPp :: !(PParams era)
   -- ^ Current protocol parameters.
-  , ppupState :: !(State (EraRule "PPUP" era))
+  , ppupState :: !(PPUPState era)
   -- ^ State of the protocol update transition system.
   }
 
 deriving stock instance
-  ( Show (State (EraRule "PPUP" era))
+  ( Show (PPUPState era)
   , Show (PParams era)
   ) =>
   Show (UpecState era)
@@ -243,54 +250,85 @@ instance Default (IncrementalStake c) where
 
 -- =============================
 
+type PPUPPredFailure era = PPUPPredFailurePV (ProtVerLow era) era
+
+type family PPUPPredFailurePV pv era where
+  PPUPPredFailurePV 1 era = ShelleyPpupPredFailure era
+  PPUPPredFailurePV 2 era = ShelleyPpupPredFailure era
+  PPUPPredFailurePV 3 era = ShelleyPpupPredFailure era
+  PPUPPredFailurePV 4 era = ShelleyPpupPredFailure era
+  PPUPPredFailurePV 5 era = ShelleyPpupPredFailure era
+  PPUPPredFailurePV 6 era = ShelleyPpupPredFailure era
+  PPUPPredFailurePV 7 era = ShelleyPpupPredFailure era
+  PPUPPredFailurePV 8 era = ShelleyPpupPredFailure era
+  PPUPPredFailurePV _ _ = ()
+
+type PPUPStateOrUnit era = PPUPStateOrUnitPV (ProtVerLow era) era
+
+type family PPUPStateOrUnitPV pv era where
+  PPUPStateOrUnitPV 1 era = PPUPState era
+  PPUPStateOrUnitPV 2 era = PPUPState era
+  PPUPStateOrUnitPV 3 era = PPUPState era
+  PPUPStateOrUnitPV 4 era = PPUPState era
+  PPUPStateOrUnitPV 5 era = PPUPState era
+  PPUPStateOrUnitPV 6 era = PPUPState era
+  PPUPStateOrUnitPV 7 era = PPUPState era
+  PPUPStateOrUnitPV 8 era = PPUPState era
+  PPUPStateOrUnitPV _ _ = ()
+
 -- | There is a serious invariant that we must maintain in the UTxOState.
 --   Given (UTxOState utxo _ _ _ istake) it must be the case that
 --   istake == (updateStakeDistribution (UTxO Map.empty) (UTxO Map.empty) utxo)
 --   Of course computing the RHS of the above equality can be very expensive, so we only
---   use this route in the testing function smartUTxO. But we are very carefull, wherever
+--   use this route in the testing function smartUTxO. But we are very careful, wherever
 --   we update the UTxO, we carefully make INCREMENTAL changes to istake to maintain
 --   this invariant. This happens in the UTxO rule.
 data UTxOState era = UTxOState
-  { utxosUtxo :: !(UTxO era)
-  , utxosDeposited :: !Coin
-  , utxosFees :: !Coin
-  , utxosPpups :: !(State (EraRule "PPUP" era))
-  , utxosStakeDistr :: !(IncrementalStake (EraCrypto era))
+  { sutxosUtxo :: !(UTxO era)
+  , sutxosDeposited :: !Coin
+  , sutxosFees :: !Coin
+  , sutxosPpups :: !(PPUPStateOrUnit era)
+  , sutxosStakeDistr :: !(IncrementalStake (EraCrypto era))
   }
   deriving (Generic)
 
 instance
   ( Era era
   , NFData (TxOut era)
-  , NFData (State (EraRule "PPUP" era))
+  , NFData (PParamsUpdate era)
+  , NFData (PPUPStateOrUnit era)
   ) =>
   NFData (UTxOState era)
 
 deriving stock instance
   ( CC.Crypto (EraCrypto era)
   , Show (TxOut era)
-  , Show (State (EraRule "PPUP" era))
+  , Show (PParamsUpdate era)
+  , Show (PPUPStateOrUnit era)
   ) =>
   Show (UTxOState era)
 
 deriving stock instance
   ( CC.Crypto (EraCrypto era)
   , Eq (TxOut era)
-  , Eq (State (EraRule "PPUP" era))
+  , Eq (PParamsUpdate era)
+  , Eq (PPUPStateOrUnit era)
   ) =>
   Eq (UTxOState era)
 
 instance
   ( NoThunks (UTxO era)
-  , NoThunks (State (EraRule "PPUP" era))
   , NoThunks (Value era)
+  , NoThunks (PParamsUpdate era)
+  , NoThunks (PPUPStateOrUnit era)
   ) =>
   NoThunks (UTxOState era)
 
 instance
   ( Era era
   , ToCBOR (TxOut era)
-  , ToCBOR (State (EraRule "PPUP" era))
+  , ToCBOR (PParamsUpdate era)
+  , ToCBOR (PPUPStateOrUnit era)
   ) =>
   ToCBOR (UTxOState era)
   where
@@ -299,10 +337,12 @@ instance
 
 instance
   ( CC.Crypto (EraCrypto era)
-  , FromCBOR (State (EraRule "PPUP" era))
   , FromSharedCBOR (TxOut era)
   , Share (TxOut era) ~ Interns (Credential 'Staking (EraCrypto era))
   , HashAnnotated (TxBody era) EraIndependentTxBody (EraCrypto era)
+  , Era era
+  , FromCBOR (PParamsUpdate era)
+  , FromCBOR (PPUPStateOrUnit era)
   ) =>
   FromSharedCBOR (UTxOState era)
   where
@@ -311,11 +351,11 @@ instance
       Interns (Credential 'Staking (EraCrypto era))
   fromSharedCBOR credInterns =
     decodeRecordNamed "UTxOState" (const 5) $ do
-      utxosUtxo <- fromSharedCBOR credInterns
-      utxosDeposited <- fromCBOR
-      utxosFees <- fromCBOR
-      utxosPpups <- fromCBOR
-      utxosStakeDistr <- fromSharedCBOR credInterns
+      sutxosUtxo <- fromSharedCBOR credInterns
+      sutxosDeposited <- fromCBOR
+      sutxosFees <- fromCBOR
+      sutxosPpups <- fromCBOR
+      sutxosStakeDistr <- fromSharedCBOR credInterns
       pure UTxOState {..}
 
 -- | New Epoch state and environment
@@ -355,8 +395,9 @@ deriving stock instance
   ( CC.Crypto (EraCrypto era)
   , Show (TxOut era)
   , Show (PParams era)
-  , Show (State (EraRule "PPUP" era))
   , Show (StashedAVVMAddresses era)
+  , Show (PParamsUpdate era)
+  , Show (PPUPStateOrUnit era)
   ) =>
   Show (NewEpochState era)
 
@@ -364,8 +405,9 @@ deriving stock instance
   ( CC.Crypto (EraCrypto era)
   , Eq (TxOut era)
   , Eq (PParams era)
-  , Eq (State (EraRule "PPUP" era))
   , Eq (StashedAVVMAddresses era)
+  , Eq (PParamsUpdate era)
+  , Eq (PPUPStateOrUnit era)
   ) =>
   Eq (NewEpochState era)
 
@@ -373,8 +415,9 @@ instance
   ( Era era
   , NFData (TxOut era)
   , NFData (PParams era)
-  , NFData (State (EraRule "PPUP" era))
   , NFData (StashedAVVMAddresses era)
+  , NFData (PParamsUpdate era)
+  , NFData (PPUPStateOrUnit era)
   ) =>
   NFData (NewEpochState era)
 
@@ -382,8 +425,9 @@ instance
   ( Era era
   , ToCBOR (TxOut era)
   , ToCBOR (PParams era)
-  , ToCBOR (State (EraRule "PPUP" era))
   , ToCBOR (StashedAVVMAddresses era)
+  , ToCBOR (PParamsUpdate era)
+  , ToCBOR (PPUPStateOrUnit era)
   ) =>
   ToCBOR (NewEpochState era)
   where
@@ -403,8 +447,9 @@ instance
   , FromSharedCBOR (TxOut era)
   , Share (TxOut era) ~ Interns (Credential 'Staking (EraCrypto era))
   , FromCBOR (Value era)
-  , FromCBOR (State (EraRule "PPUP" era))
   , FromCBOR (StashedAVVMAddresses era)
+  , FromCBOR (PParamsUpdate era)
+  , FromCBOR (PPUPStateOrUnit era)
   , HashAnnotated (TxBody era) EraIndependentTxBody (EraCrypto era)
   ) =>
   FromCBOR (NewEpochState era)
@@ -441,36 +486,41 @@ data LedgerState era = LedgerState
 deriving stock instance
   ( CC.Crypto (EraCrypto era)
   , Show (TxOut era)
-  , Show (State (EraRule "PPUP" era))
+  , Show (PParamsUpdate era)
+  , Show (PPUPStateOrUnit era)
   ) =>
   Show (LedgerState era)
 
 deriving stock instance
   ( CC.Crypto (EraCrypto era)
   , Eq (TxOut era)
-  , Eq (State (EraRule "PPUP" era))
+  , Eq (PParamsUpdate era)
+  , Eq (PPUPStateOrUnit era)
   ) =>
   Eq (LedgerState era)
 
 instance
   ( Era era
   , NoThunks (UTxO era)
-  , NoThunks (State (EraRule "PPUP" era))
   , NoThunks (Value era)
+  , NoThunks (PParamsUpdate era)
+  , NoThunks (PPUPStateOrUnit era)
   ) =>
   NoThunks (LedgerState era)
 
 instance
   ( Era era
   , NFData (TxOut era)
-  , NFData (State (EraRule "PPUP" era))
+  , NFData (PParamsUpdate era)
+  , NFData (PPUPStateOrUnit era)
   ) =>
   NFData (LedgerState era)
 
 instance
   ( Era era
   , ToCBOR (TxOut era)
-  , ToCBOR (State (EraRule "PPUP" era))
+  , ToCBOR (PParamsUpdate era)
+  , ToCBOR (PPUPStateOrUnit era)
   ) =>
   ToCBOR (LedgerState era)
   where
@@ -485,7 +535,8 @@ instance
   , FromCBOR (Value era)
   , FromSharedCBOR (TxOut era)
   , Share (TxOut era) ~ Interns (Credential 'Staking (EraCrypto era))
-  , FromCBOR (State (EraRule "PPUP" era))
+  , FromCBOR (PParamsUpdate era)
+  , FromCBOR (PPUPStateOrUnit era)
   ) =>
   FromSharedCBOR (LedgerState era)
   where
@@ -505,7 +556,7 @@ instance
 --------------------------------------------------------------------------------
 
 instance
-  (Default (State (EraRule "PPUP" era)), CC.Crypto (EraCrypto era)) =>
+  (CC.Crypto (EraCrypto era), Default (PPUPStateOrUnit era)) =>
   Default (UTxOState era)
   where
   def = UTxOState mempty mempty mempty def mempty
@@ -529,28 +580,32 @@ instance ToExpr AccountState
 
 instance
   ( ToExpr (TxOut era)
-  , ToExpr (State (EraRule "PPUP" era))
   , ToExpr (PParams era)
   , ToExpr (StashedAVVMAddresses era)
+  , ToExpr (PParamsUpdate era)
+  , ToExpr (PPUPStateOrUnit era)
   ) =>
   ToExpr (NewEpochState era)
 
 instance
   ( ToExpr (TxOut era)
-  , ToExpr (State (EraRule "PPUP" era))
   , ToExpr (PParams era)
+  , ToExpr (PParamsUpdate era)
+  , ToExpr (PPUPStateOrUnit era)
   ) =>
   ToExpr (EpochState era)
 
 instance
   ( ToExpr (TxOut era)
-  , ToExpr (State (EraRule "PPUP" era))
+  , ToExpr (PParamsUpdate era)
+  , ToExpr (PPUPStateOrUnit era)
   ) =>
   ToExpr (LedgerState era)
 
 instance
   ( ToExpr (TxOut era)
-  , ToExpr (State (EraRule "PPUP" era))
+  , ToExpr (PParamsUpdate era)
+  , ToExpr (PPUPStateOrUnit era)
   ) =>
   ToExpr (UTxOState era)
 

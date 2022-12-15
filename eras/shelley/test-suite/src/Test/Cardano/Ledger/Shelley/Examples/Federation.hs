@@ -24,12 +24,14 @@ import Cardano.Ledger.Era (Era, EraCrypto)
 import Cardano.Ledger.Keys (
   GenDelegPair (..),
   KeyHash (..),
+  KeyPair (..),
   KeyRole (..),
   SignKeyDSIGN,
   VKey (..),
   coerceKeyRole,
   hashKey,
   hashVerKeyVRF,
+  vKey,
  )
 import Cardano.Ledger.Shelley.PParams (ShelleyPParams, ShelleyPParamsHKD (..))
 import Cardano.Ledger.Slot (SlotNo (..))

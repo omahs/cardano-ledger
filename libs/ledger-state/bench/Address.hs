@@ -153,6 +153,27 @@ main = do
                 (unsafeDeserialize' version)
                 partialDeserializeAddr
             ]
+        , bgroup
+            "fromCBOR-CompactAddr"
+            [ benchDecode
+                "StakeRefNull"
+                seqUnit
+                (serialize' version <$> addrs (const StakeRefNull))
+                partialDeserializeCompactAddr
+                (unsafeDeserialize' version)
+            , benchDecode
+                "StakeRefBase"
+                seqUnit
+                (serialize' version <$> addrs stakeRefBase)
+                partialDeserializeCompactAddr
+                (unsafeDeserialize' version)
+            , benchDecode
+                "StakeRefPtr"
+                seqUnit
+                (serialize' version <$> addrs (StakeRefPtr . mkPtr))
+                partialDeserializeCompactAddr
+                (unsafeDeserialize' version)
+            ]
         ]
     ]
 

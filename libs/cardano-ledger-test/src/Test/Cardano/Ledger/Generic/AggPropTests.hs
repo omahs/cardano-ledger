@@ -82,7 +82,7 @@ consistentUtxoSizeProp proof trace = aggProp agg0 aggregate makeprop trace
         IsValid valid = isValid' proof tx
     makeprop firstSt lastSt n = getUtxoSize firstSt === getUtxoSize lastSt - n
     getUtxoSize :: MockChainState era -> Int
-    getUtxoSize state = (Map.size . unUTxO . utxosUtxo . lsUTxOState . esLState . nesEs . mcsNes) state
+    getUtxoSize state = (Map.size . unUTxO . sutxosUtxo . lsUTxOState . esLState . nesEs . mcsNes) state
 
 aggUTxO ::
   forall era.
@@ -127,13 +127,13 @@ forAllChainTrace p@(Shelley _) n propf =
 
 -- ===========================================================
 
--- | Check that the sum of dsDeposits and the psDepoits are equal to the utxosDeposits
+-- | Check that the sum of dsDeposits and the psDepoits are equal to the sutxosDeposits
 depositInvariant ::
   SourceSignalTarget (MOCKCHAIN era) ->
   Property
 depositInvariant SourceSignalTarget {source = mockChainSt} =
-  let LedgerState {lsUTxOState = utxost, lsDPState = DPState dstate pstate} = (esLState . nesEs . mcsNes) mockChainSt
-      allDeposits = utxosDeposited utxost
+  let LedgerState {lsUTxOState = sutxost, lsDPState = DPState dstate pstate} = (esLState . nesEs . mcsNes) mockChainSt
+      allDeposits = sutxosDeposited sutxost
       sumCoin m = Map.foldl' (<+>) (Coin 0) m
       keyDeposits = sumCoin (dsDeposits dstate)
       poolDeposits = sumCoin (psDeposits pstate)

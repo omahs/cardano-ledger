@@ -21,7 +21,9 @@ import Cardano.Ledger.BaseTypes (Nonce (..))
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core
 import qualified Cardano.Ledger.Crypto as CC
+import Cardano.Ledger.Shelley.LedgerState (PPUPStateOrUnit)
 import Cardano.Ledger.Shelley.PParams (
+  PPUPState (..),
   ShelleyPParams,
   ShelleyPParamsHKD (..),
   emptyPParams,
@@ -107,7 +109,10 @@ nonce0 = hashHeaderToNonce (lastByronHeaderHash @c)
 -- 'genDelegs' and any given starting 'UTxO' set.
 initSt ::
   forall era.
-  (ShelleyTest era, PParams era ~ ShelleyPParams era) =>
+  ( ShelleyTest era
+  , PParams era ~ ShelleyPParams era
+  , PPUPState era ~ PPUPStateOrUnit era
+  ) =>
   UTxO era ->
   ChainState era
 initSt utxo =

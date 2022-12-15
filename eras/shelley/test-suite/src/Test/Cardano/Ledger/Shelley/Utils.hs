@@ -24,6 +24,7 @@ module Test.Cardano.Ledger.Shelley.Utils (
   mkGenKey,
   mkKESKeyPair,
   mkVRFKeyPair,
+  mkAddr,
   runShelleyBase,
   testGlobals,
   maxKESIterations,
@@ -68,6 +69,7 @@ import Cardano.Crypto.VRF (
   genKeyVRF,
  )
 import qualified Cardano.Crypto.VRF as VRF
+import Cardano.Ledger.Address (Addr, pattern Addr)
 import Cardano.Ledger.BaseTypes (
   Globals (..),
   Network (..),
@@ -82,10 +84,15 @@ import Cardano.Ledger.Block (Block, bheader)
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core
 import Cardano.Ledger.Crypto (DSIGN)
+import qualified Cardano.Ledger.Crypto as CC (Crypto)
 import Cardano.Ledger.Keys (
+  KeyPair,
   KeyRole (..),
   VKey (..),
+  hashKey,
   updateKES,
+  vKey,
+  pattern KeyPair,
  )
 import Cardano.Ledger.Shelley.API (ApplyBlock)
 import Cardano.Ledger.Shelley.BlockChain (ShelleyTxSeq)
@@ -146,7 +153,6 @@ type ShelleyTest era =
   , ShelleyTxOut era ~ TxOut era
   , TxWits era ~ ShelleyTxWits era
   , Split (Value era)
-  , Default (State (EraRule "PPUP" era))
   , Default (StashedAVVMAddresses era)
   )
 

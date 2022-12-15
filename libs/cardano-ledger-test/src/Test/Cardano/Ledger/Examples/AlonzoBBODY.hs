@@ -62,6 +62,7 @@ import Cardano.Ledger.Shelley.API (
  )
 import Cardano.Ledger.Shelley.BlockChain (bBodySize)
 import Cardano.Ledger.Shelley.LedgerState (
+  PPUPStateOrUnit,
   smartUTxOState,
  )
 import Cardano.Ledger.Shelley.Rules (
@@ -86,7 +87,6 @@ import Cardano.Ledger.UMapCompact (View (Rewards))
 import qualified Cardano.Ledger.UMapCompact as UM
 import Cardano.Ledger.Val (inject, (<+>))
 import Cardano.Slotting.Slot (SlotNo (..))
-import Control.State.Transition.Extended hiding (Assertion)
 import qualified Data.ByteString as BS (replicate)
 import Data.Default.Class (Default (..))
 import qualified Data.Map.Strict as Map
@@ -139,10 +139,10 @@ alonzoBBODYexamplesP ::
   forall era.
   ( GoodCrypto (EraCrypto era)
   , HasTokens era
-  , Default (State (EraRule "PPUP" era))
   , PostShelley era
   , Value era ~ MaryValue (EraCrypto era)
   , EraSegWits era
+  , Default (PPUPStateOrUnit era)
   ) =>
   Proof era ->
   TestTree
@@ -166,9 +166,9 @@ alonzoBBODYexamplesP proof =
     ]
 
 initialBBodyState ::
-  ( Default (State (EraRule "PPUP" era))
-  , EraTxOut era
+  ( EraTxOut era
   , PostShelley era
+  , Default (PPUPStateOrUnit era)
   ) =>
   Proof era ->
   UTxO era ->
@@ -575,9 +575,9 @@ testBBodyState ::
   ( GoodCrypto (EraCrypto era)
   , HasTokens era
   , PostShelley era
-  , Default (State (EraRule "PPUP" era))
   , EraTxBody era
   , Value era ~ MaryValue (EraCrypto era)
+  , Default (PPUPStateOrUnit era)
   ) =>
   Proof era ->
   ShelleyBbodyState era

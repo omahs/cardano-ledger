@@ -83,6 +83,7 @@ import Cardano.Ledger.Shelley.API (
   UTxO (..),
  )
 import Cardano.Ledger.Shelley.LedgerState (
+  PPUPStateOrUnit,
   smartUTxOState,
  )
 import Cardano.Ledger.Shelley.PParams (ShelleyPParamsHKD (..))
@@ -322,15 +323,12 @@ testBBODY wit@(BBODY proof) initialSt block expected pparams =
    in case proof of
         Alonzo _ -> runSTS wit (TRC (env, initialSt, block)) (genericCont "" expected)
         Babbage _ -> runSTS wit (TRC (env, initialSt, block)) (genericCont "" expected)
-        -- TODO re-enable this once we have added all the new rules to Conway
-        -- Conway _ -> runSTS wit (TRC (env, initialSt, block)) (genericCont "" expected)
-        Conway _ -> undefined
+        Conway _ -> runSTS wit (TRC (env, initialSt, block)) (genericCont "" expected)
         other -> error ("We cannot testBBODY in era " ++ show other)
 
 testUTXOW ::
   forall era.
   ( GoodCrypto (EraCrypto era)
-  , Default (State (EraRule "PPUP" era))
   , PostShelley era
   , EraTx era
   , HasCallStack
@@ -352,10 +350,10 @@ testUTXOWsubset
   , testUTXOspecialCase ::
     forall era.
     ( GoodCrypto (EraCrypto era)
-    , Default (State (EraRule "PPUP" era))
     , PostShelley era
     , EraTx era
     , HasCallStack
+    , Default (PPUPStateOrUnit era)
     ) =>
     WitRule "UTXOW" era ->
     UTxO era ->
@@ -392,8 +390,8 @@ type Result era = Either [PredicateFailure (EraRule "UTXOW" era)] (State (EraRul
 testUTXOWwith ::
   forall era.
   ( GoodCrypto (EraCrypto era)
-  , Default (State (EraRule "PPUP" era))
   , EraTx era
+  , Default (PPUPStateOrUnit era)
   ) =>
   WitRule "UTXOW" era ->
   (Result era -> Result era -> Assertion) ->
@@ -406,9 +404,7 @@ testUTXOWwith wit@(UTXOW proof) cont utxo pparams tx expected =
   let env = UtxoEnv (SlotNo 0) pparams def (GenDelegs mempty)
       state = smartUTxOState utxo (Coin 0) (Coin 0) def
    in case proof of
-        -- TODO re-enable this once we have added all the new rules to Conway
-        -- Conway _ -> runSTS wit (TRC (env, state, tx)) (cont expected)
-        Conway _ -> undefined
+        Conway _ -> runSTS wit (TRC (env, state, tx)) (cont expected)
         Babbage _ -> runSTS wit (TRC (env, state, tx)) (cont expected)
         Alonzo _ -> runSTS wit (TRC (env, state, tx)) (cont expected)
         Mary _ -> runSTS wit (TRC (env, state, tx)) (cont expected)

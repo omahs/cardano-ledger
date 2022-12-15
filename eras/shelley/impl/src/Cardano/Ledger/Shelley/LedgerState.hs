@@ -25,7 +25,9 @@ module Cardano.Ledger.Shelley.LedgerState (
   KeyPairs, -- deprecated
   LedgerState (..),
   PPUPState (..),
+  PPUPStateOrUnit,
   PState (..),
+  PPUPPredFailure,
   RewardAccounts,
   RewardUpdate (..),
   RewardSnapShot (..),

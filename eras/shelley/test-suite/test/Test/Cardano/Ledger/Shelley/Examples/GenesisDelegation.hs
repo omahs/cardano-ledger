@@ -33,7 +33,7 @@ import Cardano.Ledger.Keys (
  )
 import Cardano.Ledger.SafeHash (hashAnnotated)
 import Cardano.Ledger.Shelley (ShelleyEra)
-import Cardano.Ledger.Shelley.LedgerState (FutureGenDeleg (..), PulsingRewUpdate)
+import Cardano.Ledger.Shelley.LedgerState (FutureGenDeleg (..), PPUPState (..), PPUPStateOrUnit, PulsingRewUpdate)
 import Cardano.Ledger.Shelley.PParams (ShelleyPParams, ShelleyPParamsHKD (..))
 import Cardano.Ledger.Shelley.Tx (ShelleyTx (..))
 import Cardano.Ledger.Shelley.TxBody (
@@ -102,7 +102,10 @@ initUTxO =
     bobInitCoin = Val.inject $ Coin $ 1 * 1000 * 1000 * 1000 * 1000 * 1000
 
 initStGenesisDeleg ::
-  (ShelleyTest era, PParams era ~ ShelleyPParams era) =>
+  ( ShelleyTest era
+  , PParams era ~ ShelleyPParams era
+  , PPUPStateOrUnit era ~ PPUPState era
+  ) =>
   ChainState era
 initStGenesisDeleg = initSt initUTxO
 

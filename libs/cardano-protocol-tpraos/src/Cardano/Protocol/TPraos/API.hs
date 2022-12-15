@@ -58,7 +58,6 @@ import Cardano.Ledger.BaseTypes (
  )
 import Cardano.Ledger.Binary (FromCBOR (..), ToCBOR (..), decodeRecordNamed, encodeListLen)
 import Cardano.Ledger.Chain (ChainChecksPParams, pparamsToChainChecksPParams)
-import Cardano.Ledger.Conway (ConwayEra)
 import Cardano.Ledger.Core
 import qualified Cardano.Ledger.Crypto as CC (Crypto, StandardCrypto, VRF)
 import Cardano.Ledger.Keys (

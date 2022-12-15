@@ -65,6 +65,7 @@ import Cardano.Ledger.Pretty (
  )
 import Cardano.Ledger.Pretty.Alonzo ()
 import Cardano.Ledger.Pretty.Babbage ()
+import Cardano.Ledger.Shelley.API (PPUPState (..))
 import Cardano.Ledger.Shelley.LedgerState (
   AccountState (..),
   DPState (..),
@@ -74,7 +75,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   InstantaneousRewards (..),
   LedgerState (..),
   NewEpochState (..),
-  PPUPState (..),
+  PPUPStateOrUnit,
   PState (..),
   StashedAVVMAddresses,
   UTxOState (..),
@@ -90,7 +91,6 @@ import Cardano.Ledger.TxIn (TxId (..), TxIn (..))
 import qualified Cardano.Ledger.UMapCompact as UM
 import Cardano.Ledger.UTxO (UTxO (..))
 import Control.Monad.Trans ()
-import Control.State.Transition (STS (State))
 import Data.Default.Class (Default (def))
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -229,7 +229,7 @@ proposedPPUpdatesZero = ProposedPPUpdates Map.empty
 nonMyopicZero :: NonMyopic c
 nonMyopicZero = NonMyopic Map.empty mempty
 
-pPUPStateZeroByProof :: Proof era -> State (Core.EraRule "PPUP" era)
+pPUPStateZeroByProof :: Proof era -> PPUPState era
 pPUPStateZeroByProof (Conway _) = PPUPState proposedPPUpdatesZero proposedPPUpdatesZero
 pPUPStateZeroByProof (Babbage _) = PPUPState proposedPPUpdatesZero proposedPPUpdatesZero
 pPUPStateZeroByProof (Alonzo _) = PPUPState proposedPPUpdatesZero proposedPPUpdatesZero
@@ -245,8 +245,14 @@ pParamsZeroByProof (Mary _) = def
 pParamsZeroByProof (Allegra _) = def
 pParamsZeroByProof (Shelley _) = def
 
-pPUPStateZero :: forall era. Reflect era => State (Core.EraRule "PPUP" era)
-pPUPStateZero = pPUPStateZeroByProof @era (reify :: Proof era)
+pPUPStateZero :: forall era. Reflect era => PPUPStateOrUnit era
+pPUPStateZero = case reify @era of
+  Shelley _ -> pPUPStateZeroByProof @era (reify :: Proof era)
+  Mary _ -> pPUPStateZeroByProof @era (reify :: Proof era)
+  Allegra _ -> pPUPStateZeroByProof @era (reify :: Proof era)
+  Alonzo _ -> pPUPStateZeroByProof @era (reify :: Proof era)
+  Babbage _ -> pPUPStateZeroByProof @era (reify :: Proof era)
+  Conway _ -> ()
 
 uTxOStateZero :: forall era. Reflect era => UTxOState era
 uTxOStateZero = smartUTxOState utxoZero mempty mempty (pPUPStateZero @era)
@@ -372,13 +378,13 @@ abstract x =
     , mKeyDeposits = (dsDeposits . dpsDState . lsDPState . esLState . nesEs) x
     , mRewards = (UM.rewView . dsUnified . dpsDState . lsDPState . esLState . nesEs) x
     , mDelegations = (UM.delView . dsUnified . dpsDState . lsDPState . esLState . nesEs) x
-    , mUTxO = (unUTxO . utxosUtxo . lsUTxOState . esLState . nesEs) x
+    , mUTxO = (unUTxO . sutxosUtxo . lsUTxOState . esLState . nesEs) x
     , mMutFee = Map.empty
     , mAccountState = (esAccountState . nesEs) x
     , mPoolDistr = (unPoolDistr . nesPd) x
     , mPParams = (esPp . nesEs) x
-    , mDeposited = (utxosDeposited . lsUTxOState . esLState . nesEs) x
-    , mFees = (utxosFees . lsUTxOState . esLState . nesEs) x
+    , mDeposited = (sutxosDeposited . lsUTxOState . esLState . nesEs) x
+    , mFees = (sutxosFees . lsUTxOState . esLState . nesEs) x
     , mCount = 0
     , mIndex = Map.empty
     , -- below here NO EFFECT until we model EpochBoundary

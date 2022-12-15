@@ -32,7 +32,7 @@ import Cardano.Ledger.Conway.Governance (
   VoterRole (..),
  )
 import Cardano.Ledger.Conway.TxBody (ConwayTxBody (..))
-import Cardano.Ledger.Core (EraPParams (..), EraTxBody (..), EraTxOut (..))
+import Cardano.Ledger.Core (EraPParams (..), EraTxBody (..), EraTxOut (..), Value)
 import Cardano.Ledger.Pretty (
   PDoc,
   PrettyA (..),
@@ -51,6 +51,7 @@ import Cardano.Ledger.Pretty (
   ppStrictSeq,
   ppTxId,
   ppTxIn,
+  ppTxOut,
   ppUrl,
   ppWdrl,
   ppWord64,

@@ -50,7 +50,10 @@ library
   other-modules:
     Cardano.Ledger.Conway.Era
     Cardano.Ledger.Conway.UTxO
-    Cardano.Ledger.Conway.Rules.Utxo
+    Cardano.Ledger.Conway.Rules.Enactment
+    Cardano.Ledger.Conway.Rules.Epoch
+    Cardano.Ledger.Conway.Rules.NewEpoch
+    Cardano.Ledger.Conway.Rules.Tally
     Cardano.Ledger.Conway.Rules.Utxos
   build-depends:
                 aeson,
@@ -63,9 +66,12 @@ library
                 cardano-ledger-mary,
                 cardano-ledger-shelley,
                 containers,
+                data-default,
+                data-default-class,
                 deepseq,
                 microlens,
                 nothunks,
+                set-algebra,
                 small-steps,
                 cardano-strict-containers,
   hs-source-dirs:

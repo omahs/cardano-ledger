@@ -17,6 +17,7 @@ module Cardano.Ledger.Shelley.Rules.Epoch (
   ShelleyEpochPredFailure (..),
   ShelleyEpochEvent (..),
   PredicateFailure,
+  UpecPredFailure,
 )
 where
 
@@ -25,7 +26,8 @@ import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core
 import Cardano.Ledger.EpochBoundary (SnapShots)
 import Cardano.Ledger.Shelley.Era (ShelleyEPOCH)
-import Cardano.Ledger.Shelley.LedgerState (EpochState, LedgerState, PState (..), UTxOState (utxosDeposited, utxosPpups), UpecState (..), asReserves, esAccountState, esLState, esNonMyopic, esPp, esPrevPp, esSnapshots, lsDPState, lsUTxOState, obligationDPState, pattern DPState, pattern EpochState)
+import Cardano.Ledger.Shelley.LedgerState (EpochState, LedgerState, PPUPState (..), PState (..), UTxOState (sutxosDeposited, sutxosPpups), UpecState (..), asReserves, esAccountState, esLState, esNonMyopic, esPp, esPrevPp, esSnapshots, lsDPState, lsUTxOState, obligationDPState, pattern DPState, pattern EpochState)
+import Cardano.Ledger.Shelley.LedgerState.Types (PPUPStateOrUnit)
 import Cardano.Ledger.Shelley.Rewards ()
 import Cardano.Ledger.Shelley.Rules.PoolReap (
   ShelleyPOOLREAP,
@@ -52,23 +54,36 @@ import GHC.Generics (Generic)
 import GHC.Records (HasField)
 import NoThunks.Class (NoThunks (..))
 
+type UpecPredFailure era = UpecPredFailurePV (ProtVerLow era) era
+
+type family UpecPredFailurePV pv era where
+  UpecPredFailurePV 1 era = ShelleyUpecPredFailure era
+  UpecPredFailurePV 2 era = ShelleyUpecPredFailure era
+  UpecPredFailurePV 3 era = ShelleyUpecPredFailure era
+  UpecPredFailurePV 4 era = ShelleyUpecPredFailure era
+  UpecPredFailurePV 5 era = ShelleyUpecPredFailure era
+  UpecPredFailurePV 6 era = ShelleyUpecPredFailure era
+  UpecPredFailurePV 7 era = ShelleyUpecPredFailure era
+  UpecPredFailurePV 8 era = ShelleyUpecPredFailure era
+  UpecPredFailurePV _ era = Void
+
 data ShelleyEpochPredFailure era
   = PoolReapFailure (PredicateFailure (EraRule "POOLREAP" era)) -- Subtransition Failures
   | SnapFailure (PredicateFailure (EraRule "SNAP" era)) -- Subtransition Failures
-  | UpecFailure (PredicateFailure (EraRule "UPEC" era)) -- Subtransition Failures
+  | UpecFailure (UpecPredFailure era) -- Subtransition Failures
   deriving (Generic)
 
 deriving stock instance
   ( Eq (PredicateFailure (EraRule "POOLREAP" era))
   , Eq (PredicateFailure (EraRule "SNAP" era))
-  , Eq (PredicateFailure (EraRule "UPEC" era))
+  , Eq (UpecPredFailure era)
   ) =>
   Eq (ShelleyEpochPredFailure era)
 
 deriving stock instance
   ( Show (PredicateFailure (EraRule "POOLREAP" era))
   , Show (PredicateFailure (EraRule "SNAP" era))
-  , Show (PredicateFailure (EraRule "UPEC" era))
+  , Show (UpecPredFailure era)
   ) =>
   Show (ShelleyEpochPredFailure era)
 
@@ -93,8 +108,10 @@ instance
   , Environment (EraRule "UPEC" era) ~ EpochState era
   , State (EraRule "UPEC" era) ~ UpecState era
   , Signal (EraRule "UPEC" era) ~ ()
-  , Default (State (EraRule "PPUP" era))
   , Default (PParams era)
+  , Eq (UpecPredFailure era)
+  , Show (UpecPredFailure era)
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   STS (ShelleyEPOCH era)
   where
@@ -109,7 +126,7 @@ instance
 instance
   ( NoThunks (PredicateFailure (EraRule "POOLREAP" era))
   , NoThunks (PredicateFailure (EraRule "SNAP" era))
-  , NoThunks (PredicateFailure (EraRule "UPEC" era))
+  , NoThunks (UpecPredFailure era)
   ) =>
   NoThunks (ShelleyEpochPredFailure era)
 
@@ -127,6 +144,7 @@ epochTransition ::
   , Environment (EraRule "UPEC" era) ~ EpochState era
   , State (EraRule "UPEC" era) ~ UpecState era
   , Signal (EraRule "UPEC" era) ~ ()
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   TransitionRule (ShelleyEPOCH era)
 epochTransition = do
@@ -171,18 +189,18 @@ epochTransition = do
 
   UpecState pp' ppupSt' <-
     trans @(EraRule "UPEC" era) $
-      TRC (epochState', UpecState pp (utxosPpups utxoSt'), ())
-  let utxoSt'' = utxoSt' {utxosPpups = ppupSt'}
+      TRC (epochState', UpecState pp (sutxosPpups utxoSt'), ())
+  let utxoSt'' = utxoSt' {sutxosPpups = ppupSt'}
 
   let
     -- At the epoch boundary refunds are made, so we need to change what
-    -- the utxosDeposited field is. The other two places where deposits are
+    -- the sutxosDeposited field is. The other two places where deposits are
     -- kept (dsDeposits of DState and psDeposits of PState) are adjusted by
-    -- the rules, So we can recompute the utxosDeposited field using adjustedDPState
-    -- since we have the invariant that: obligationDPState dpstate == utxosDeposited utxostate
+    -- the rules, So we can recompute the sutxosDeposited field using adjustedDPState
+    -- since we have the invariant that: obligationDPState dpstate == sutxosDeposited sutxostate
     Coin oblgNew = obligationDPState adjustedDPstate
     Coin reserves = asReserves acnt'
-    utxoSt''' = utxoSt'' {utxosDeposited = Coin oblgNew}
+    utxoSt''' = utxoSt'' {sutxosDeposited = Coin oblgNew}
     acnt'' = acnt' {asReserves = Coin reserves}
   pure $
     epochState'
@@ -216,7 +234,7 @@ instance
 instance
   ( Era era
   , STS (ShelleyUPEC era)
-  , PredicateFailure (EraRule "UPEC" era) ~ ShelleyUpecPredFailure era
+  , UpecPredFailure era ~ ShelleyUpecPredFailure era
   , Event (EraRule "UPEC" era) ~ Void
   ) =>
   Embed (ShelleyUPEC era) (ShelleyEPOCH era)

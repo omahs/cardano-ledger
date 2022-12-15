@@ -99,9 +99,9 @@ deriving instance
   , Eq (Core.Tx era)
   , Eq (PredicateFailure (Core.EraRule "LEDGER" era))
   , Eq (Core.TxOut era)
-  , Eq (State (Core.EraRule "PPUP" era))
   , Eq (StashedAVVMAddresses era)
   , Eq (TranslationContext era)
+  , Eq (PPUPStateOrUnit era)
   , Era era
   ) =>
   Eq (ShelleyLedgerExamples era)
@@ -124,6 +124,7 @@ defaultShelleyLedgerExamples ::
   , Core.PParams era ~ ShelleyPParams era
   , Core.PParamsUpdate era ~ ShelleyPParamsUpdate era
   , Default (StashedAVVMAddresses era)
+  , Default (PPUPStateOrUnit era)
   ) =>
   (Core.TxBody era -> KeyPairWits era -> Core.TxWits era) ->
   (ShelleyTx era -> Core.Tx era) ->
@@ -311,6 +312,7 @@ exampleNewEpochState ::
   , HasField "_tau" (Core.PParams era) UnitInterval
   , Default (StashedAVVMAddresses era)
   , Core.EraTxOut era
+  , Default (PPUPStateOrUnit era)
   ) =>
   Core.Value era ->
   Core.PParams era ->
@@ -340,7 +342,7 @@ exampleNewEpochState value ppp pp =
             LedgerState
               { lsUTxOState =
                   UTxOState
-                    { utxosUtxo =
+                    { sutxosUtxo =
                         UTxO $
                           Map.fromList
                             [
@@ -348,10 +350,10 @@ exampleNewEpochState value ppp pp =
                               , Core.mkBasicTxOut addr value
                               )
                             ]
-                    , utxosDeposited = Coin 1000
-                    , utxosFees = Coin 1
-                    , utxosPpups = def
-                    , utxosStakeDistr = mempty
+                    , sutxosDeposited = Coin 1000
+                    , sutxosFees = Coin 1
+                    , sutxosPpups = def
+                    , sutxosStakeDistr = mempty
                     }
               , lsDPState = def
               }

@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -49,6 +50,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   EpochState (..),
   LedgerState (..),
   NewEpochState (..),
+  PPUPStateOrUnit,
   PState (..),
   StashedAVVMAddresses,
   UTxOState (..),
@@ -220,7 +222,7 @@ makeEpochState gstate ledgerstate =
     }
 
 snaps :: EraTxOut era => LedgerState era -> SnapShots (EraCrypto era)
-snaps (LedgerState UTxOState {utxosUtxo = u, utxosFees = f} (DPState dstate pstate)) =
+snaps (LedgerState UTxOState {sutxosUtxo = u, sutxosFees = f} (DPState dstate pstate)) =
   SnapShots snap (calculatePoolDistr snap) snap snap f
   where
     snap = stakeDistr u dstate pstate
@@ -247,7 +249,7 @@ raiseMockError ::
   GenState era ->
   String
 raiseMockError slot (SlotNo next) epochstate pdfs txs GenState {..} =
-  let utxo = unUTxO $ (utxosUtxo . lsUTxOState . esLState) epochstate
+  let utxo = unUTxO $ (sutxosUtxo . lsUTxOState . esLState) epochstate
       _ssPoolParams = (psStakePoolParams . dpsPState . lsDPState . esLState) epochstate
       _pooldeposits = (psDeposits . dpsPState . lsDPState . esLState) epochstate
       _keydeposits = (dsDeposits . dpsDState . lsDPState . esLState) epochstate
@@ -505,9 +507,7 @@ forEachEpochTrace ::
 forEachEpochTrace proof tracelen genSize f = do
   let newEpoch tr1 tr2 = nesEL (mcsNes tr1) /= nesEL (mcsNes tr2)
   trc <- case proof of
-    -- TODO re-enable this once we have added all the new rules to Conway
-    -- Conway _ -> genTrace proof tracelen genSize (initStableFields proof)
-    Conway _ -> undefined
+    Conway _ -> genTrace proof tracelen genSize (initStableFields proof)
     Babbage _ -> genTrace proof tracelen genSize (initStableFields proof)
     Alonzo _ -> genTrace proof tracelen genSize (initStableFields proof)
     Allegra _ -> genTrace proof tracelen genSize (initStableFields proof)
@@ -548,8 +548,8 @@ chainTest ::
   forall era.
   ( Reflect era
   , HasTrace (MOCKCHAIN era) (Gen1 era)
-  , Eq (State (EraRule "PPUP" era))
   , Eq (StashedAVVMAddresses era)
+  , Eq (PPUPStateOrUnit era)
   ) =>
   Proof era ->
   Int ->

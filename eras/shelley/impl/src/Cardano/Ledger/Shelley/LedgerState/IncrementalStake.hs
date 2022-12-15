@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 
 -- ===========================================================================
 -- There are three parts to IncrementalStaking.
@@ -69,7 +70,6 @@ import Cardano.Ledger.UTxO (
   UTxO (..),
  )
 import Control.DeepSeq (NFData (rnf), deepseq)
-import Control.State.Transition (STS (State))
 import Data.Foldable (fold)
 import Data.Group (invert)
 import Data.Map.Strict (Map)
@@ -130,22 +130,23 @@ incrementalAggregateUtxoCoinByCredential mode (UTxO u) initial =
 
 -- ================================================
 
--- | A valid (or self-consistent) UTxOState{utxosUtxo, utxosDeposited , utxosFees  , utxosPpups , utxosStakeDistr}
---   maintains an invariant between the utxosUtxo and utxosStakeDistr fields. the utxosStakeDistr field is
+-- | A valid (or self-consistent) UTxOState{sutxosUtxo, sutxosDeposited , sutxosFees  , sutxosPpups , sutxosStakeDistr}
+--   maintains an invariant between the sutxosUtxo and sutxosStakeDistr fields. the sutxosStakeDistr field is
 --   the aggregation of Coin over the StakeReferences in the UTxO. It can be computed by a pure
 --   function from the _utxo field. In some situations, mostly unit or example tests, or when
---   initializing a small UTxO, we want to create a UTxOState that computes the utxosStakeDistr from
---   the utxosUtxo. This is aways safe to do, but if the utxosUtxo field is big, this can be very expensive,
---   which defeats the purpose of memoizing the utxosStakeDistr field. So use of this function should be
+--   initializing a small UTxO, we want to create a UTxOState that computes the sutxosStakeDistr from
+--   the sutxosUtxo. This is aways safe to do, but if the sutxosUtxo field is big, this can be very expensive,
+--   which defeats the purpose of memoizing the sutxosStakeDistr field. So use of this function should be
 --   restricted to tests and initializations, where the invariant should be maintained.
 --
 --   TO IncrementalStake
 smartUTxOState ::
-  EraTxOut era =>
+  ( EraTxOut era
+  ) =>
   UTxO era ->
   Coin ->
   Coin ->
-  State (EraRule "PPUP" era) ->
+  PPUPStateOrUnit era ->
   UTxOState era
 smartUTxOState utxo c1 c2 st =
   UTxOState
@@ -287,7 +288,7 @@ applyRUpdFiltered
       ls' =
         ls
           { lsUTxOState =
-              utxoState_ {utxosFees = utxosFees utxoState_ `addDeltaCoin` deltaF ru}
+              utxoState_ {sutxosFees = sutxosFees utxoState_ `addDeltaCoin` deltaF ru}
           , lsDPState =
               delegState
                 { dpsDState =

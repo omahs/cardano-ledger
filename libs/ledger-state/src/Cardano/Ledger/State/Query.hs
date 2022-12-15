@@ -56,9 +56,9 @@ insertUTxOState ::
 insertUTxOState Shelley.UTxOState {..} = do
   insert $
     UtxoState
-      { utxoStateDeposited = utxosDeposited
-      , utxoStateFees = utxosFees
-      , utxoStatePpups = utxosPpups
+      { utxoStateDeposited = sutxosDeposited
+      , utxoStateFees = sutxosFees
+      , utxoStatePpups = sutxosPpups
       }
 
 insertUTxO ::
@@ -114,7 +114,7 @@ insertLedgerState ::
   MonadIO m => EpochStateId -> Shelley.LedgerState CurrentEra -> ReaderT SqlBackend m ()
 insertLedgerState epochStateKey Shelley.LedgerState {..} = do
   stateKey <- insertUTxOState lsUTxOState
-  insertUTxO (Shelley.utxosUtxo lsUTxOState) stateKey
+  insertUTxO (Shelley.sutxosUtxo lsUTxOState) stateKey
   dstateKey <- insertDState $ Shelley.dpsDState lsDPState
   insert_
     LedgerState

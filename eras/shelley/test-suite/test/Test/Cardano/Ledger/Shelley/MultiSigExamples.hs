@@ -39,14 +39,16 @@ import Cardano.Ledger.Credential (
 import Cardano.Ledger.Keys (
   GenDelegs (..),
   KeyHash (..),
+  KeyPair,
   KeyRole (..),
   asWitness,
  )
 import Cardano.Ledger.SafeHash (hashAnnotated)
 import Cardano.Ledger.Shelley (ShelleyEra)
-import Cardano.Ledger.Shelley.API (ShelleyUTXOW)
+import Cardano.Ledger.Shelley.API (PPUPState (..), ShelleyUTXOW)
 import Cardano.Ledger.Shelley.LedgerState (
   LedgerState (..),
+  PPUPStateOrUnit,
   UTxOState,
   genesisState,
  )
@@ -196,7 +198,12 @@ aliceInitCoin = Coin 10000
 bobInitCoin :: Coin
 bobInitCoin = Coin 1000
 
-genesis :: forall era. ShelleyTest era => LedgerState era
+genesis ::
+  forall era.
+  ( ShelleyTest era
+  , PPUPStateOrUnit era ~ PPUPState era
+  ) =>
+  LedgerState era
 genesis = genesisState genDelegs0 utxo0
   where
     genDelegs0 = Map.empty

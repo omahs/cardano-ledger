@@ -37,6 +37,8 @@ import Cardano.Ledger.Shelley.Bench.Gen (genBlock, genChainState)
 import Cardano.Ledger.Shelley.BlockChain (slotToNonce)
 import Cardano.Ledger.Shelley.LedgerState (
   NewEpochState,
+  PPUPState,
+  PPUPStateOrUnit,
   StashedAVVMAddresses,
   nesBcur,
  )
@@ -55,7 +57,6 @@ import Cardano.Protocol.TPraos.Rules.Tickn (TicknState (..))
 import Cardano.Slotting.Slot (withOriginToMaybe)
 import Control.DeepSeq (NFData (rnf))
 import Control.Monad.Except ()
-import Control.State.Transition (STS (State))
 import qualified Control.State.Transition.Trace.Generator.QuickCheck as QC
 import qualified Data.Map.Strict as Map
 import Data.Proxy
@@ -85,6 +86,7 @@ validateInput ::
   , QC.HasTrace (API.ShelleyLEDGERS era) (GenEnv era)
   , API.ApplyBlock era
   , GetLedgerView era
+  , PPUPStateOrUnit era ~ PPUPState era
   , MinLEDGER_STS era
   ) =>
   Int ->
@@ -100,6 +102,7 @@ genValidateInput ::
   , API.ApplyBlock era
   , GetLedgerView era
   , MinLEDGER_STS era
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   Int ->
   IO (ValidateInput era)
@@ -125,8 +128,9 @@ applyBlock ::
   , NFData (Core.TxOut era)
   , API.ApplyBlock era
   , NFData (Core.PParams era)
-  , NFData (State (Core.EraRule "PPUP" era))
   , NFData (StashedAVVMAddresses era)
+  , PPUPStateOrUnit era ~ PPUPState era
+  , NFData (Core.PParamsUpdate era)
   ) =>
   ValidateInput era ->
   Int ->
@@ -181,6 +185,7 @@ genUpdateInputs ::
   , GetLedgerView era
   , Core.EraRule "LEDGERS" era ~ API.ShelleyLEDGERS era
   , QC.HasTrace (API.ShelleyLEDGERS era) (GenEnv era)
+  , PPUPStateOrUnit era ~ PPUPState era
   , API.ApplyBlock era
   ) =>
   Int ->

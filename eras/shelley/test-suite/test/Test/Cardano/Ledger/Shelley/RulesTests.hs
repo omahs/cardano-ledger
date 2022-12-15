@@ -571,7 +571,7 @@ setDepositsToObligation nes = nes {nesEs = es {esLState = ls {lsUTxOState = utxo
   where
     es = nesEs nes
     ls = esLState es
-    utxoState = (lsUTxOState ls) {utxosDeposited = obligationDPState $ lsDPState ls}
+    utxoState = (lsUTxOState ls) {sutxosDeposited = obligationDPState $ lsDPState ls}
 
 -- | This property test checks the correctness of the TICKF transation.
 -- TICKF is used by the consensus layer to get a ledger view in a computationally

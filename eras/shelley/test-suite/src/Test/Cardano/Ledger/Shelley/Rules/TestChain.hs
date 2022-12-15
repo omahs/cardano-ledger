@@ -59,6 +59,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   LedgerState (..),
   NewEpochState (..),
   PPUPState (..),
+  PPUPStateOrUnit,
   PState (..),
   UTxOState (..),
   completeRupd,
@@ -181,9 +182,9 @@ import qualified Test.Tasty.QuickCheck as TQC
 adaIsPreserved ::
   forall era.
   ( EraGen era
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , QC.HasTrace (CHAIN era) (GenEnv era)
   , ProtVerAtMost era 8
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   Property
 adaIsPreserved =
@@ -200,8 +201,8 @@ minimal ::
   forall era.
   ( EraGen era
   , QC.HasTrace (CHAIN era) (GenEnv era)
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , ProtVerAtMost era 8
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   TestTree
 minimal =
@@ -243,8 +244,8 @@ collisionFreeComplete ::
   ( EraGen era
   , ChainProperty era
   , TestingLedger era ledger
-  , Default (State (EraRule "PPUP" era))
   , QC.HasTrace (CHAIN era) (GenEnv era)
+  , Default (PPUPStateOrUnit era)
   ) =>
   Property
 collisionFreeComplete =
@@ -265,9 +266,9 @@ stakeIncrTest ::
   forall era ledger.
   ( EraGen era
   , TestingLedger era ledger
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , ChainProperty era
   , QC.HasTrace (CHAIN era) (GenEnv era)
+  , Default (PPUPStateOrUnit era)
   ) =>
   Property
 stakeIncrTest =
@@ -293,9 +294,9 @@ incrStakeComp SourceSignalTarget {source = chainSt, signal = block} =
     checkIncrStakeComp :: SourceSignalTarget ledger -> Property
     checkIncrStakeComp
       SourceSignalTarget
-        { source = LedgerState UTxOState {utxosUtxo = u, utxosStakeDistr = sd} dp
+        { source = LedgerState UTxOState {sutxosUtxo = u, sutxosStakeDistr = sd} dp
         , signal = tx
-        , target = LedgerState UTxOState {utxosUtxo = u', utxosStakeDistr = sd'} dp'
+        , target = LedgerState UTxOState {sutxosUtxo = u', sutxosStakeDistr = sd'} dp'
         } =
         counterexample
           ( mconcat
@@ -331,10 +332,10 @@ adaPreservationChain ::
   forall era ledger.
   ( EraGen era
   , TestingLedger era ledger
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , ChainProperty era
   , QC.HasTrace (CHAIN era) (GenEnv era)
   , ProtVerAtMost era 8
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   Property
 adaPreservationChain =
@@ -379,8 +380,8 @@ checkPreservation ::
   , ShelleyEraTxBody era
   , HasField "_keyDeposit" (PParams era) Coin
   , HasField "_poolDeposit" (PParams era) Coin
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , ProtVerAtMost era 8
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   (SourceSignalTarget (CHAIN era), Int) ->
   Property
@@ -445,7 +446,7 @@ checkPreservation (SourceSignalTarget {source, target, signal}, count) =
     oldPoolDeposit = psDeposits . dpsPState . lsDPState $ lsOld
     newPoolDeposit = psDeposits . dpsPState . lsDPState $ lsNew
 
-    proposal = votedValue (proposals . utxosPpups . lsUTxOState $ lsOld) currPP 5
+    proposal = votedValue (proposals . sutxosPpups . lsUTxOState $ lsOld) currPP 5
     obligationMsgs = case proposal of
       Nothing -> []
       Just proposal' ->
@@ -534,7 +535,7 @@ utxoDepositsIncreaseByFeesWithdrawals SourceSignalTarget {source, signal, target
   where
     us = lsUTxOState . esLState . nesEs . chainNes
     circulation chainSt =
-      let UTxOState {utxosUtxo = u, utxosDeposited = d} = us chainSt
+      let UTxOState {sutxosUtxo = u, sutxosDeposited = d} = us chainSt
        in coinBalance u <+> d
     (_, ledgerTr) = ledgerTraceFromBlock @era @ledger source signal
 
@@ -550,7 +551,7 @@ potsSumIncreaseWdrlsPerBlock SourceSignalTarget {source, signal, target} =
     $ potsSum target <-> potsSum source === withdrawals signal
   where
     potsSum chainSt =
-      let UTxOState {utxosUtxo = u, utxosDeposited = d, utxosFees = f} =
+      let UTxOState {sutxosUtxo = u, sutxosDeposited = d, sutxosFees = f} =
             lsUTxOState . esLState . nesEs . chainNes $ chainSt
        in coinBalance u <+> d <+> f
 
@@ -574,9 +575,9 @@ potsSumIncreaseWdrlsPerTx SourceSignalTarget {source = chainSt, signal = block} 
     sumIncreaseWdrls :: SourceSignalTarget ledger -> Property
     sumIncreaseWdrls
       SourceSignalTarget
-        { source = LedgerState UTxOState {utxosUtxo = u, utxosDeposited = d, utxosFees = f} _
+        { source = LedgerState UTxOState {sutxosUtxo = u, sutxosDeposited = d, sutxosFees = f} _
         , signal = tx
-        , target = LedgerState UTxOState {utxosUtxo = u', utxosDeposited = d', utxosFees = f'} _
+        , target = LedgerState UTxOState {sutxosUtxo = u', sutxosDeposited = d', sutxosFees = f'} _
         } =
         property (hasFailedScripts tx)
           .||. (coinBalance u' <+> d' <+> f')
@@ -603,11 +604,11 @@ potsSumIncreaseByRewardsPerTx SourceSignalTarget {source = chainSt, signal = blo
       SourceSignalTarget
         { source =
           LedgerState
-            UTxOState {utxosUtxo = u, utxosDeposited = d, utxosFees = f}
+            UTxOState {sutxosUtxo = u, sutxosDeposited = d, sutxosFees = f}
             DPState {dpsDState = DState {dsUnified = umap1}}
         , target =
           LedgerState
-            UTxOState {utxosUtxo = u', utxosDeposited = d', utxosFees = f'}
+            UTxOState {sutxosUtxo = u', sutxosDeposited = d', sutxosFees = f'}
             DPState {dpsDState = DState {dsUnified = umap2}}
         } =
         (coinBalance u' <+> d' <+> f')
@@ -678,8 +679,8 @@ preserveBalance SourceSignalTarget {source = chainSt, signal = block} =
         (failedScripts .||. ediffEq created consumed_)
       where
         failedScripts = property $ hasFailedScripts tx
-        LedgerState (UTxOState {utxosUtxo = u}) dpstate = ledgerSt
-        LedgerState (UTxOState {utxosUtxo = u'}) _ = ledgerSt'
+        LedgerState (UTxOState {sutxosUtxo = u}) dpstate = ledgerSt
+        LedgerState (UTxOState {sutxosUtxo = u'}) _ = ledgerSt'
         txb = tx ^. bodyTxL
         created =
           coinBalance u'
@@ -714,7 +715,7 @@ preserveBalanceRestricted SourceSignalTarget {source = chainSt, signal = block} 
 
     createdIsConsumed
       SourceSignalTarget
-        { source = LedgerState (UTxOState {utxosUtxo = UTxO u}) dpstate
+        { source = LedgerState (UTxOState {sutxosUtxo = UTxO u}) dpstate
         , signal = tx
         } =
         inps === outs
@@ -747,7 +748,7 @@ preserveOutputsTx SourceSignalTarget {source = chainSt, signal = block} =
     (_, ledgerTr) = ledgerTraceFromBlock @era @ledger chainSt block
     outputPreserved
       SourceSignalTarget
-        { target = LedgerState (UTxOState {utxosUtxo = UTxO utxo}) _
+        { target = LedgerState (UTxOState {sutxosUtxo = UTxO utxo}) _
         , signal = tx
         } =
         let UTxO outs = txouts @era (tx ^. bodyTxL)
@@ -775,8 +776,8 @@ canRestrictUTxO SourceSignalTarget {source = chainSt, signal = block} =
     (UTxO irrelevantUTxO, ledgerTrRestr) =
       ledgerTraceFromBlockWithRestrictedUTxO @era @ledger chainSt block
     outputPreserved
-      SourceSignalTarget {target = LedgerState (UTxOState {utxosUtxo = UTxO uFull}) _}
-      SourceSignalTarget {target = LedgerState (UTxOState {utxosUtxo = UTxO uRestr}) _} =
+      SourceSignalTarget {target = LedgerState (UTxOState {sutxosUtxo = UTxO uFull}) _}
+      SourceSignalTarget {target = LedgerState (UTxOState {sutxosUtxo = UTxO uRestr}) _} =
         counterexample
           (unlines ["non-disjoint:", show uRestr, show irrelevantUTxO])
           (uRestr `Map.disjoint` irrelevantUTxO)
@@ -801,7 +802,7 @@ eliminateTxInputs SourceSignalTarget {source = chainSt, signal = block} =
     (_, ledgerTr) = ledgerTraceFromBlock @era @ledger chainSt block
     inputsEliminated
       SourceSignalTarget
-        { target = LedgerState (UTxOState {utxosUtxo = (UTxO u')}) _
+        { target = LedgerState (UTxOState {sutxosUtxo = (UTxO u')}) _
         , signal = tx
         } =
         property $
@@ -827,9 +828,9 @@ newEntriesAndUniqueTxIns SourceSignalTarget {source = chainSt, signal = block} =
     (_, ledgerTr) = ledgerTraceFromBlock @era @ledger chainSt block
     newEntryPresent
       SourceSignalTarget
-        { source = LedgerState (UTxOState {utxosUtxo = UTxO u}) _
+        { source = LedgerState (UTxOState {sutxosUtxo = UTxO u}) _
         , signal = tx
-        , target = LedgerState (UTxOState {utxosUtxo = UTxO u'}) _
+        , target = LedgerState (UTxOState {sutxosUtxo = UTxO u'}) _
         } =
         let UTxO outs = txouts @era (tx ^. bodyTxL)
             outIds = Set.map (\(TxIn _id _) -> _id) (Map.keysSet outs)
@@ -927,7 +928,7 @@ txFees ledgerTr =
     f
       c
       SourceSignalTarget
-        { source = LedgerState UTxOState {utxosUtxo = utxo} _
+        { source = LedgerState UTxOState {sutxosUtxo = utxo} _
         , signal = tx
         } = c <> feeOrCollateral tx utxo
 
@@ -937,7 +938,7 @@ nonNegativeDeposits ::
   Property
 nonNegativeDeposits SourceSignalTarget {source = chainSt} =
   let es = (nesEs . chainNes) chainSt
-      UTxOState {utxosDeposited = d} = (lsUTxOState . esLState) es
+      UTxOState {sutxosDeposited = d} = (lsUTxOState . esLState) es
    in counterexample ("nonNegativeDeposits: " ++ show d) (d >= mempty)
 
 -- | Check that the sum of dsDeposits and the psDepoits are equal to the utsosDeposits
@@ -945,8 +946,8 @@ depositInvariant ::
   SourceSignalTarget (CHAIN era) ->
   Property
 depositInvariant SourceSignalTarget {source = chainSt} =
-  let LedgerState {lsUTxOState = utxost, lsDPState = DPState dstate pstate} = (esLState . nesEs . chainNes) chainSt
-      allDeposits = utxosDeposited utxost
+  let LedgerState {lsUTxOState = sutxost, lsDPState = DPState dstate pstate} = (esLState . nesEs . chainNes) chainSt
+      allDeposits = sutxosDeposited sutxost
       sumCoin m = Map.foldl' (<+>) (Coin 0) m
       keyDeposits = sumCoin (dsDeposits dstate)
       poolDeposits = sumCoin (psDeposits pstate)
@@ -984,7 +985,7 @@ feesNonDecreasing SourceSignalTarget {source, target} =
     fees_ source <= fees_ target
   where
     fees_ chainSt =
-      let UTxOState {utxosFees = fees} =
+      let UTxOState {sutxosFees = fees} =
             lsUTxOState . esLState . nesEs . chainNes $ chainSt
        in fees
 
@@ -994,8 +995,8 @@ feesNonDecreasing SourceSignalTarget {source, target} =
 shortChainTrace ::
   forall era.
   ( EraGen era
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , QC.HasTrace (CHAIN era) (GenEnv era)
+  , Default (PPUPStateOrUnit era)
   ) =>
   (SourceSignalTarget (CHAIN era) -> Property) ->
   Property
@@ -1005,8 +1006,8 @@ shortChainTrace f = withMaxSuccess 100 $ forAllChainTrace @era 10 $ \tr -> conjo
 depositTests ::
   forall era.
   ( EraGen era
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , QC.HasTrace (CHAIN era) (GenEnv era)
+  , Default (PPUPStateOrUnit era)
   ) =>
   TestTree
 depositTests =
@@ -1026,10 +1027,10 @@ depositTests =
 poolProperties ::
   forall era.
   ( EraGen era
-  , Default (State (EraRule "PPUP" era))
   , ChainProperty era
   , QC.HasTrace (CHAIN era) (GenEnv era)
   , ProtVerAtMost era 8
+  , Default (PPUPStateOrUnit era)
   ) =>
   Property
 poolProperties =
@@ -1110,10 +1111,10 @@ poolStateIsInternallyConsistent (SourceSignalTarget {source = chainSt, signal = 
 delegProperties ::
   forall era.
   ( EraGen era
-  , Default (State (EraRule "PPUP" era))
   , QC.HasTrace (CHAIN era) (GenEnv era)
   , ChainProperty era
   , ProtVerAtMost era 8
+  , Default (PPUPStateOrUnit era)
   ) =>
   Property
 delegProperties =
@@ -1181,9 +1182,9 @@ ledgerTraceFromBlockWithRestrictedUTxO chainSt block =
     (_tickedChainSt, ledgerEnv, ledgerSt0, txs) = ledgerTraceBase chainSt block
     txIns = neededTxInsForBlock block
     LedgerState utxoSt delegationSt = ledgerSt0
-    utxo = unUTxO . utxosUtxo $ utxoSt
+    utxo = unUTxO . sutxosUtxo $ utxoSt
     (relevantUTxO, irrelevantUTxO) = Map.partitionWithKey (const . (`Set.member` txIns)) utxo
-    ledgerSt0' = LedgerState (utxoSt {utxosUtxo = UTxO relevantUTxO}) delegationSt
+    ledgerSt0' = LedgerState (utxoSt {sutxosUtxo = UTxO relevantUTxO}) delegationSt
 
 -- | Reconstruct a POOL trace from the transactions in a Block and ChainState
 poolTraceFromBlock ::
@@ -1310,9 +1311,9 @@ chainSstWithTick ledgerTr =
 removedAfterPoolreap ::
   forall era.
   ( ChainProperty era
-  , Default (State (EraRule "PPUP" era))
   , EraGen era
   , QC.HasTrace (CHAIN era) (GenEnv era)
+  , Default (PPUPStateOrUnit era)
   ) =>
   Property
 removedAfterPoolreap =
@@ -1335,9 +1336,9 @@ removedAfterPoolreap =
 forAllChainTrace ::
   forall era prop.
   ( Testable prop
-  , Default (State (EraRule "PPUP" era))
   , EraGen era
   , QC.HasTrace (CHAIN era) (GenEnv era)
+  , Default (PPUPStateOrUnit era)
   ) =>
   Word64 -> -- trace length
   (Trace (CHAIN era) -> prop) ->
@@ -1369,7 +1370,7 @@ forEachEpochTrace ::
   ( EraGen era
   , Testable prop
   , QC.HasTrace (CHAIN era) (GenEnv era)
-  , Default (State (EraRule "PPUP" era))
+  , Default (PPUPStateOrUnit era)
   ) =>
   Int ->
   Word64 ->
@@ -1393,7 +1394,7 @@ atEpoch ::
   ( EraGen era
   , Testable prop
   , QC.HasTrace (CHAIN era) (GenEnv era)
-  , Default (State (EraRule "PPUP" era))
+  , Default (PPUPStateOrUnit era)
   ) =>
   (LedgerState era -> LedgerState era -> prop) ->
   Property
@@ -1428,7 +1429,7 @@ incrementalStakeProp ::
   forall era.
   ( EraGen era
   , QC.HasTrace (CHAIN era) (GenEnv era)
-  , Default (State (EraRule "PPUP" era))
+  , Default (PPUPStateOrUnit era)
   ) =>
   Proxy era ->
   Property

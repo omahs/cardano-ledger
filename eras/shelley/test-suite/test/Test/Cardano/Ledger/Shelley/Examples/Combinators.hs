@@ -85,6 +85,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   LedgerState (..),
   NewEpochState (..),
   PPUPState (..),
+  PPUPStateOrUnit,
   PState (..),
   PulsingRewUpdate (..),
   RewardUpdate (..),
@@ -111,7 +112,6 @@ import Cardano.Protocol.TPraos.BHeader (
   prevHashToNonce,
  )
 import Cardano.Slotting.Slot (EpochNo, WithOrigin (..))
-import Control.State.Transition (STS (State))
 import Data.Foldable (fold, foldl')
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -199,11 +199,11 @@ feesAndDeposits ppEx newFees stakes pools cs = cs {chainNes = nes'}
     utxoSt = lsUTxOState ls
     utxoSt' =
       utxoSt
-        { utxosDeposited =
-            (utxosDeposited utxoSt)
+        { sutxosDeposited =
+            (sutxosDeposited utxoSt)
               <+> (length stakes <×> _keyDeposit ppEx)
               <+> (newcount <×> _poolDeposit ppEx)
-        , utxosFees = (utxosFees utxoSt) <+> newFees
+        , sutxosFees = (sutxosFees utxoSt) <+> newFees
         }
     ls' = ls {lsUTxOState = utxoSt', lsDPState = dpstate'}
     -- Count the number of new pools, because we don't take a deposit for existing pools
@@ -235,8 +235,8 @@ feesAndKeyRefund newFees key cs = cs {chainNes = nes'}
     utxoSt = lsUTxOState ls
     utxoSt' =
       utxoSt
-        { utxosDeposited = (utxosDeposited utxoSt) <-> refund
-        , utxosFees = (utxosFees utxoSt) <+> newFees
+        { sutxosDeposited = (sutxosDeposited utxoSt) <-> refund
+        , sutxosFees = (sutxosFees utxoSt) <+> newFees
         }
     ls' = ls {lsUTxOState = utxoSt', lsDPState = dpstate'}
     es' = es {esLState = ls'}
@@ -258,14 +258,14 @@ newUTxO txb cs = cs {chainNes = nes'}
     es = nesEs nes
     ls = esLState es
     utxoSt = lsUTxOState ls
-    utxo = unUTxO $ utxosUtxo utxoSt
+    utxo = unUTxO $ sutxosUtxo utxoSt
     utxoAdd = txouts @era txb
     utxoToDel = Map.restrictKeys utxo (txins @era txb)
     utxoWithout = Map.withoutKeys utxo (txins @era txb)
     utxoDel = UTxO utxoToDel
     utxo' = UTxO (utxoWithout `Map.union` unUTxO utxoAdd)
-    sd' = updateStakeDistribution @era (utxosStakeDistr utxoSt) utxoDel utxoAdd
-    utxoSt' = utxoSt {utxosUtxo = utxo', utxosStakeDistr = sd'}
+    sd' = updateStakeDistribution @era (sutxosStakeDistr utxoSt) utxoDel utxoAdd
+    utxoSt' = utxoSt {sutxosUtxo = utxo', sutxosStakeDistr = sd'}
     ls' = ls {lsUTxOState = utxoSt'}
     es' = es {esLState = ls'}
     nes' = nes {nesEs = es'}
@@ -481,7 +481,7 @@ reapPool pool cs = cs {chainNes = nes'}
     as = esAccountState es
     as' = as {asTreasury = (asTreasury as) <+> unclaimed}
     utxoSt = lsUTxOState ls
-    utxoSt' = utxoSt {utxosDeposited = (utxosDeposited utxoSt) <-> (_poolDeposit pp)}
+    utxoSt' = utxoSt {sutxosDeposited = (sutxosDeposited utxoSt) <-> (_poolDeposit pp)}
     dps' = dps {dpsPState = ps', dpsDState = ds'}
     ls' = ls {lsDPState = dps', lsUTxOState = utxoSt'}
     es' = es {esLState = ls', esAccountState = as'}
@@ -708,7 +708,7 @@ newEpoch b cs = cs'
 -- Set the current protocol parameter proposals.
 setCurrentProposals ::
   forall era.
-  State (Core.EraRule "PPUP" era) ~ PPUPState era =>
+  PPUPStateOrUnit era ~ PPUPState era =>
   ProposedPPUpdates era ->
   ChainState era ->
   ChainState era
@@ -718,9 +718,9 @@ setCurrentProposals ps cs = cs {chainNes = nes'}
     es = nesEs nes
     ls = esLState es
     utxoSt = lsUTxOState ls
-    ppupSt = utxosPpups utxoSt
+    ppupSt = sutxosPpups utxoSt
     ppupSt' = ppupSt {proposals = ps}
-    utxoSt' = utxoSt {utxosPpups = ppupSt'}
+    utxoSt' = utxoSt {sutxosPpups = ppupSt'}
     ls' = ls {lsUTxOState = utxoSt'}
     es' = es {esLState = ls'}
     nes' = nes {nesEs = es'}
@@ -730,7 +730,7 @@ setCurrentProposals ps cs = cs {chainNes = nes'}
 -- Set the future protocol parameter proposals.
 setFutureProposals ::
   forall era.
-  State (Core.EraRule "PPUP" era) ~ PPUPState era =>
+  PPUPStateOrUnit era ~ PPUPState era =>
   ProposedPPUpdates era ->
   ChainState era ->
   ChainState era
@@ -740,9 +740,9 @@ setFutureProposals ps cs = cs {chainNes = nes'}
     es = nesEs nes
     ls = esLState es
     utxoSt = lsUTxOState ls
-    ppupSt = utxosPpups utxoSt
+    ppupSt = sutxosPpups utxoSt
     ppupSt' = ppupSt {futureProposals = ps}
-    utxoSt' = utxoSt {utxosPpups = ppupSt'}
+    utxoSt' = utxoSt {sutxosPpups = ppupSt'}
     ls' = ls {lsUTxOState = utxoSt'}
     es' = es {esLState = ls'}
     nes' = nes {nesEs = es'}

@@ -12,7 +12,7 @@
 -- the UTxO part of the ledger state.
 module Byron.Spec.Ledger.STS.UTXOWS where
 
-import Byron.Spec.Ledger.STS.UTXO (UTxOEnv, UTxOState)
+import Byron.Spec.Ledger.STS.UTXO (ShelleyUTxOState, UTxOEnv)
 import Byron.Spec.Ledger.STS.UTXOW (UTXOW)
 import Byron.Spec.Ledger.UTxO (Tx)
 import Control.State.Transition (
@@ -43,7 +43,7 @@ data UtxowsPredicateFailure
   deriving (Eq, Show, Data, Typeable, Generic, NoThunks)
 
 instance STS UTXOWS where
-  type State UTXOWS = UTxOState
+  type State UTXOWS = ShelleyUTxOState
   type Signal UTXOWS = [Tx]
   type Environment UTXOWS = UTxOEnv
   type PredicateFailure UTXOWS = UtxowsPredicateFailure

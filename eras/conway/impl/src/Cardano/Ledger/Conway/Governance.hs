@@ -135,7 +135,7 @@ instance
       enc (TreasuryWithdrawals ws) = Sum (toCBOR ws) 2
 
 newtype GovernanceActionIx = GovernanceActionIx Word64
-  deriving (Generic, Eq, Show)
+  deriving (Generic, Eq, Ord, Show, Num, Enum)
 
 instance NoThunks GovernanceActionIx
 
@@ -147,9 +147,9 @@ deriving newtype instance ToCBOR GovernanceActionIx
 
 data GovernanceActionId c = GovernanceActionId
   { gaidTxId :: !(TxId c)
-  , gaidGovActionIx :: !(GovernanceActionIx)
+  , gaidGovActionIx :: !GovernanceActionIx
   }
-  deriving (Generic, Eq, Show)
+  deriving (Generic, Eq, Ord, Show)
 
 instance Crypto c => FromCBOR (GovernanceActionId c) where
   fromCBOR =
@@ -214,7 +214,7 @@ data VoterRole
   = ConstitutionalCommittee
   | DRep
   | SPO
-  deriving (Generic, Eq, Show, Enum)
+  deriving (Generic, Eq, Ord, Show, Enum)
 
 instance FromCBOR VoterRole where
   fromCBOR =

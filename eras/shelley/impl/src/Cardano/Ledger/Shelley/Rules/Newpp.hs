@@ -26,7 +26,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   DState (..),
   PPUPState (..),
   PState (..),
-  UTxOState (utxosDeposited),
+  UTxOState (sutxosDeposited),
   obligationDPState,
   pvCanFollow,
  )
@@ -107,8 +107,8 @@ newPpTransition = do
     Just ppNew' -> do
       let Coin oblgCurr = obligationDPState (DPState dstate pstate)
       Coin oblgCurr
-        == utxosDeposited utxoSt
-        ?! UnexpectedDepositPot (Coin oblgCurr) (utxosDeposited utxoSt)
+        == sutxosDeposited utxoSt
+        ?! UnexpectedDepositPot (Coin oblgCurr) (sutxosDeposited utxoSt)
 
       if (getField @"_maxTxSize" ppNew' + getField @"_maxBHSize" ppNew')
         < getField @"_maxBBSize" ppNew'

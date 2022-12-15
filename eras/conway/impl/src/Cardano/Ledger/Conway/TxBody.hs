@@ -73,7 +73,7 @@ import Cardano.Ledger.Binary.Coders (
   ofield,
   (!>),
  )
-import Cardano.Ledger.Coin (Coin (..))
+import Cardano.Ledger.Coin (Coin (..), CompactForm)
 import Cardano.Ledger.Conway.Core (
   ConwayEraTxBody (..),
  )
@@ -142,23 +142,45 @@ data ConwayTxBodyRaw era = ConwayTxBodyRaw
   deriving (Generic, Typeable)
 
 deriving instance
-  (Era era, Eq (TxOut era), Eq (PParamsUpdate era)) =>
+  ( Era era
+  , Eq (Script era)
+  , Eq (CompactForm (Value era))
+  , Eq (PParamsUpdate era)
+  , Eq (TxOut era)
+  ) =>
   Eq (ConwayTxBodyRaw era)
 
 instance
-  (NoThunks (TxOut era), NoThunks (PParamsUpdate era)) =>
+  ( NoThunks (PParamsUpdate era)
+  , NoThunks (TxOut era)
+  ) =>
   NoThunks (ConwayTxBodyRaw era)
 
 instance
-  (Era era, NFData (TxOut era), NFData (PParamsUpdate era)) =>
+  ( Era era
+  , NFData (PParamsUpdate era)
+  , NFData (TxOut era)
+  ) =>
   NFData (ConwayTxBodyRaw era)
 
 deriving instance
-  (Era era, Show (TxOut era), Show (PParamsUpdate era)) =>
+  ( Era era
+  , Val (Value era)
+  , Show (Value era)
+  , Show (Script era)
+  , Show (PParamsUpdate era)
+  , Show (TxOut era)
+  ) =>
   Show (ConwayTxBodyRaw era)
 
 instance
-  (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+  ( Era era
+  , Val (Value era)
+  , DecodeNonNegative (Value era)
+  , FromCBOR (Annotator (Script era))
+  , FromCBOR (PParamsUpdate era)
+  , FromCBOR (TxOut era)
+  ) =>
   FromCBOR (ConwayTxBodyRaw era)
   where
   fromCBOR =
@@ -205,19 +227,36 @@ newtype ConwayTxBody era = TxBodyConstr (MemoBytes ConwayTxBodyRaw era)
   deriving (Generic, SafeToHash, ToCBOR)
 
 instance
-  (Era era, NoThunks (TxOut era), NoThunks (PParamsUpdate era)) =>
+  ( Era era
+  , NoThunks (PParamsUpdate era)
+  , NoThunks (TxOut era)
+  ) =>
   NoThunks (ConwayTxBody era)
 
 deriving instance
-  (Era era, Eq (TxOut era), Eq (PParamsUpdate era)) =>
+  ( Era era
+  , Eq (Script era)
+  , Eq (CompactForm (Value era))
+  , Eq (PParamsUpdate era)
+  , Eq (TxOut era)
+  ) =>
   Eq (ConwayTxBody era)
 
 deriving newtype instance
-  (Era era, NFData (TxOut era), NFData (PParamsUpdate era)) =>
+  ( Era era
+  , NFData (PParamsUpdate era)
+  , NFData (TxOut era)
+  ) =>
   NFData (ConwayTxBody era)
 
 deriving instance
-  (Era era, Show (TxOut era), Show (PParamsUpdate era)) =>
+  ( Era era
+  , Val (Value era)
+  , Show (Value era)
+  , Show (Script era)
+  , Show (PParamsUpdate era)
+  , Show (TxOut era)
+  ) =>
   Show (ConwayTxBody era)
 
 type instance MemoHashIndex ConwayTxBodyRaw = EraIndependentTxBody
@@ -226,7 +265,13 @@ instance (c ~ EraCrypto era) => HashAnnotated (ConwayTxBody era) EraIndependentT
   hashAnnotated = getMemoSafeHash
 
 instance
-  (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+  ( Era era
+  , Val (Value era)
+  , DecodeNonNegative (Value era)
+  , FromCBOR (PParamsUpdate era)
+  , FromCBOR (Annotator (Script era))
+  , FromCBOR (TxOut era)
+  ) =>
   FromCBOR (Annotator (ConwayTxBodyRaw era))
   where
   fromCBOR = pure <$> fromCBOR
@@ -234,7 +279,13 @@ instance
 deriving via
   (Mem ConwayTxBodyRaw era)
   instance
-    (Era era, FromCBOR (TxOut era), FromCBOR (PParamsUpdate era)) =>
+    ( Era era
+    , Val (Value era)
+    , DecodeNonNegative (Value era)
+    , FromCBOR (PParamsUpdate era)
+    , FromCBOR (Annotator (Script era))
+    , FromCBOR (TxOut era)
+    ) =>
     FromCBOR (Annotator (ConwayTxBody era))
 
 mkConwayTxBody :: ConwayEraTxBody era => ConwayTxBody era
@@ -303,6 +354,8 @@ instance Crypto c => ShelleyEraTxBody (ConwayEra c) where
 
   updateTxBodyL = notSupportedInThisEraL
   {-# INLINE updateTxBodyL #-}
+
+  updateTxBodyG = to (const SNothing)
 
   certsTxBodyL = notSupportedInThisEraL
   {-# INLINE certsTxBodyL #-}

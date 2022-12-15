@@ -11,7 +11,7 @@
 module Byron.Spec.Ledger.STS.UTXO (
   UTXO,
   UTxOEnv (UTxOEnv),
-  UTxOState (UTxOState),
+  ShelleyUTxOState (ShelleyUTxOState),
   UtxoPredicateFailure (..),
   PredicateFailure,
   utxo,
@@ -51,7 +51,7 @@ data UTxOEnv = UTxOEnv
   }
   deriving (Eq, Show, Generic, NoThunks)
 
-data UTxOState = UTxOState
+data ShelleyUTxOState = ShelleyUTxOState
   { utxo :: UTxO
   , reserves :: Lovelace
   }
@@ -71,7 +71,7 @@ data UtxoPredicateFailure
 
 instance STS UTXO where
   type Environment UTXO = UTxOEnv
-  type State UTXO = UTxOState
+  type State UTXO = ShelleyUTxOState
   type Signal UTXO = Tx
   type PredicateFailure UTXO = UtxoPredicateFailure
 
@@ -79,7 +79,7 @@ instance STS UTXO where
     [ do
         IRC UTxOEnv {utxo0} <- judgmentContext
         return $
-          UTxOState
+          ShelleyUTxOState
             { utxo = utxo0
             , reserves = lovelaceCap - balance utxo0
             }
@@ -88,7 +88,7 @@ instance STS UTXO where
     [ do
         TRC
           ( UTxOEnv _ pps
-            , UTxOState {utxo, reserves}
+            , ShelleyUTxOState {utxo, reserves}
             , tx
             ) <-
           judgmentContext
@@ -110,7 +110,7 @@ instance STS UTXO where
         all (0 <) outputValues ?! NonPositiveOutputs
 
         return $
-          UTxOState
+          ShelleyUTxOState
             { utxo = (ins ⋪ utxo) ∪ outs
             , reserves = reserves + fee
             }

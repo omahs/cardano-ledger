@@ -33,6 +33,8 @@ import Cardano.Ledger.Shelley.LedgerState (
   AccountState (..),
   EpochState (..),
   NewEpochState (..),
+  PPUPState (..),
+  PPUPStateOrUnit,
   PulsingRewUpdate,
   emptyRewardUpdate,
  )
@@ -107,7 +109,14 @@ initUTxO =
     aliceInitCoin = Val.inject $ Coin $ 10 * 1000 * 1000 * 1000 * 1000 * 1000
     bobInitCoin = Val.inject $ Coin $ 1 * 1000 * 1000 * 1000 * 1000 * 1000
 
-initStMIR :: forall era. (ShelleyTest era, PParams era ~ ShelleyPParams era) => Coin -> ChainState era
+initStMIR ::
+  forall era.
+  ( ShelleyTest era
+  , PParams era ~ ShelleyPParams era
+  , PPUPStateOrUnit era ~ PPUPState era
+  ) =>
+  Coin ->
+  ChainState era
 initStMIR treasury = cs {chainNes = (chainNes cs) {nesEs = es'}}
   where
     cs = initSt @era initUTxO

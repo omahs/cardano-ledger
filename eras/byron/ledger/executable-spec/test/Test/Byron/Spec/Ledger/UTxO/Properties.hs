@@ -7,7 +7,7 @@
 module Test.Byron.Spec.Ledger.UTxO.Properties where
 
 import Byron.Spec.Ledger.Core (Lovelace, dom, unLovelace, (∩), (∪), (⋪), (◁))
-import Byron.Spec.Ledger.STS.UTXO (UTxOState (UTxOState), pps, reserves, utxo)
+import Byron.Spec.Ledger.STS.UTXO (ShelleyUTxOState (ShelleyUTxOState), pps, reserves, utxo)
 import Byron.Spec.Ledger.STS.UTXOW (UTXOW)
 import Byron.Spec.Ledger.UTxO (
   Tx (..),
@@ -67,7 +67,7 @@ moneyIsConstant = withTests 300 . property $ do
 noDoubleSpending :: Property
 noDoubleSpending = withTests 300 . property $ do
   t <- forAll (trace @UTXOW () 100)
-  let UTxOState {utxo = utxo0} = _traceInitState t
+  let ShelleyUTxOState {utxo = utxo0} = _traceInitState t
       txs = body <$> traceSignals OldestFirst t
   when (all (\ti -> dom (txouts ti) ∩ dom utxo0 == empty) txs) $
     traverse_ (noCommonInputsTxs txs) (zip txs [0 ..])
@@ -101,7 +101,7 @@ utxoAndTxoutsMustBeDisjoint = withTests 300 . property $ do
     fmap (second body) $
       preStatesAndSignals OldestFirst t
   where
-    utxoAndTxoutsAreDisjoint (UTxOState {utxo}, tx) =
+    utxoAndTxoutsAreDisjoint (ShelleyUTxOState {utxo}, tx) =
       dom utxo ∩ dom (txouts tx) === mempty
 
 --------------------------------------------------------------------------------
@@ -143,7 +143,7 @@ relevantCasesAreCovered = withTests 400 $
         & fromIntegral
       where
         pps_ = pps (tr ^. traceEnv)
-    txFeeSurplus :: (Tx -> Lovelace) -> (UTxOState, Tx) -> Integer
+    txFeeSurplus :: (Tx -> Lovelace) -> (ShelleyUTxOState, Tx) -> Integer
     txFeeSurplus txMinFee (st, txw) =
       fee - minFee
       where
@@ -153,7 +153,7 @@ relevantCasesAreCovered = withTests 400 $
         minFee = unLovelace $ txMinFee txw
     futureInputs :: Trace UTXOW -> [Set TxIn]
     futureInputs tr =
-      let UTxOState {utxo = utxo0} = _traceInitState tr
+      let ShelleyUTxOState {utxo = utxo0} = _traceInitState tr
           txs = body <$> traceSignals OldestFirst tr
        in (\ti -> dom (txouts ti) ∩ dom utxo0) <$> txs
 
@@ -181,7 +181,7 @@ avgInputsOutputs txs =
 -- >>>       if 2 < length (txins tx)
 -- >>>       then drop 1 (txins tx)
 -- >>>       else txins tx
--- >>> return $ UTxOState { utxo     = (xs ⋪ utxo) ∪ txouts tx
+-- >>> return $ ShelleyUTxOState { utxo     = (xs ⋪ utxo) ∪ txouts tx
 -- >>>                    , reserves = reserves + fee
 -- >>>                    }
 --

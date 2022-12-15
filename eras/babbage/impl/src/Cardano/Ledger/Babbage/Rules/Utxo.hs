@@ -45,6 +45,7 @@ import Cardano.Ledger.Alonzo.Tx (AlonzoTx (..))
 import Cardano.Ledger.Alonzo.TxBody (AlonzoEraTxBody (collateralInputsTxBodyL))
 import Cardano.Ledger.Alonzo.TxWits (
   AlonzoEraTxWits (..),
+  AlonzoTxWits (..),
   nullRedeemers,
  )
 import Cardano.Ledger.Babbage.Collateral (collAdaBalance)
@@ -52,6 +53,7 @@ import Cardano.Ledger.Babbage.Era (BabbageUTXO)
 import Cardano.Ledger.Babbage.Rules.Utxos (BabbageUTXOS)
 import Cardano.Ledger.Babbage.TxBody (
   BabbageEraTxBody (..),
+  BabbageTxOut,
  )
 import Cardano.Ledger.BaseTypes (
   ProtVer (..),
@@ -70,6 +72,7 @@ import Cardano.Ledger.Rules.ValidationMode (
   runTest,
   runTestOnSignal,
  )
+import Cardano.Ledger.Shelley.LedgerState (PPUPPredFailure)
 import qualified Cardano.Ledger.Shelley.LedgerState as Shelley
 import Cardano.Ledger.Shelley.Rules (ShelleyUtxoPredFailure, UtxoEnv)
 import qualified Cardano.Ledger.Shelley.Rules as Shelley
@@ -147,13 +150,13 @@ instance Inject (BabbageUtxoPredFailure era) (BabbageUtxoPredFailure era) where
   inject = id
 
 instance
-  Inject (PredicateFailure (EraRule "PPUP" era)) (PredicateFailure (EraRule "UTXOS" era)) =>
+  Inject (PPUPPredFailure era) (PredicateFailure (EraRule "UTXOS" era)) =>
   Inject (AllegraUtxoPredFailure era) (BabbageUtxoPredFailure era)
   where
   inject = AlonzoInBabbageUtxoPredFailure . utxoPredFailMaToAlonzo
 
 instance
-  Inject (PredicateFailure (EraRule "PPUP" era)) (PredicateFailure (EraRule "UTXOS" era)) =>
+  Inject (PPUPPredFailure era) (PredicateFailure (EraRule "UTXOS" era)) =>
   Inject (ShelleyUtxoPredFailure era) (BabbageUtxoPredFailure era)
   where
   inject = AlonzoInBabbageUtxoPredFailure . utxoPredFailShelleyToAlonzo
@@ -271,7 +274,9 @@ validateCollateralEqBalance bal txcoll =
 
 -- > getValue txout ≥ inject ( serSize txout ∗ coinsPerUTxOByte pp )
 validateOutputTooSmallUTxO ::
-  EraTxOut era =>
+  ( EraTxOut era
+  , TxOut era ~ BabbageTxOut era
+  ) =>
   PParams era ->
   [Sized (TxOut era)] ->
   Test (BabbageUtxoPredFailure era)
@@ -321,6 +326,7 @@ utxoTransition ::
   , BabbageEraTxBody era
   , AlonzoEraTxWits era
   , Tx era ~ AlonzoTx era
+  , TxOut era ~ BabbageTxOut era
   , STS (BabbageUTXO era)
   , HasField "_maxTxSize" (PParams era) Natural
   , HasField "_maxValSize" (PParams era) Natural
@@ -334,7 +340,7 @@ utxoTransition ::
   , Environment (EraRule "UTXOS" era) ~ UtxoEnv era
   , State (EraRule "UTXOS" era) ~ Shelley.UTxOState era
   , Signal (EraRule "UTXOS" era) ~ Tx era
-  , Inject (PredicateFailure (EraRule "PPUP" era)) (PredicateFailure (EraRule "UTXOS" era))
+  , Inject (PPUPPredFailure era) (PredicateFailure (EraRule "UTXOS" era))
   ) =>
   TransitionRule (BabbageUTXO era)
 utxoTransition = do
@@ -414,6 +420,8 @@ instance
   , BabbageEraTxBody era
   , AlonzoEraTxWits era
   , Tx era ~ AlonzoTx era
+  , TxOut era ~ BabbageTxOut era
+  , TxWits era ~ AlonzoTxWits era
   , HasField "_maxCollateralInputs" (PParams era) Natural
   , HasField "_coinsPerUTxOByte" (PParams era) Coin
   , HasField "_collateralPercentage" (PParams era) Natural
@@ -428,9 +436,8 @@ instance
   , Environment (EraRule "UTXOS" era) ~ UtxoEnv era
   , State (EraRule "UTXOS" era) ~ Shelley.UTxOState era
   , Signal (EraRule "UTXOS" era) ~ Tx era
-  , Inject (PredicateFailure (EraRule "PPUP" era)) (PredicateFailure (EraRule "UTXOS" era))
+  , Inject (PPUPPredFailure era) (PredicateFailure (EraRule "UTXOS" era))
   , PredicateFailure (EraRule "UTXO" era) ~ BabbageUtxoPredFailure era
-  , ProtVerAtMost era 8
   ) =>
   STS (BabbageUTXO era)
   where

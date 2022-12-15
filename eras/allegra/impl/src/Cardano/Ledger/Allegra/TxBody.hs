@@ -75,6 +75,7 @@ import Cardano.Ledger.Shelley.PParams (Update)
 import Cardano.Ledger.Shelley.TxBody (
   DCert (..),
   ShelleyEraTxBody (..),
+  ShelleyTxOut (..),
   Wdrl (..),
  )
 import Cardano.Ledger.TxIn (TxIn (..))
@@ -90,7 +91,7 @@ import NoThunks.Class (NoThunks (..))
 
 data AllegraTxBodyRaw ma era = AllegraTxBodyRaw
   { atbrInputs :: !(Set (TxIn (EraCrypto era)))
-  , atbrOutputs :: !(StrictSeq (TxOut era))
+  , atbrOutputs :: !(StrictSeq (ShelleyTxOut era))
   , atbrCerts :: !(StrictSeq (DCert (EraCrypto era)))
   , atbrWdrls :: !(Wdrl (EraCrypto era))
   , atbrTxFee :: !Coin
@@ -218,7 +219,7 @@ deriving newtype instance
   NoThunks (AllegraTxBody era)
 
 deriving newtype instance
-  ( NFData (TxOut era)
+  ( NFData (Value era)
   , NFData (PParamsUpdate era)
   , Era era
   ) =>

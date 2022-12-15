@@ -41,14 +41,23 @@ import Cardano.Ledger.Babbage.Tx
 import Cardano.Ledger.Babbage.TxBody (
   AlonzoEraTxBody (collateralInputsTxBodyL),
   BabbageEraTxBody,
+  BabbageTxOut,
   ShelleyEraTxBody (..),
  )
-import Cardano.Ledger.BaseTypes (ProtVer, ShelleyBase, epochInfo, strictMaybeToMaybe, systemStart)
+import Cardano.Ledger.BaseTypes (
+  ProtVer,
+  ShelleyBase,
+  epochInfo,
+  strictMaybeToMaybe,
+  systemStart,
+ )
 import Cardano.Ledger.Binary (ToCBOR (..))
 import Cardano.Ledger.Coin (Coin)
 import Cardano.Ledger.Core
 import Cardano.Ledger.Shelley.LedgerState (
-  PPUPState (..),
+  PPUPPredFailure,
+  PPUPState,
+  PPUPStateOrUnit,
   UTxOState (..),
   keyTxRefunds,
   totalTxDeposits,
@@ -83,6 +92,8 @@ instance
   , EraUTxO era
   , ScriptsNeeded era ~ AlonzoScriptsNeeded era
   , Tx era ~ AlonzoTx era
+  , TxOut era ~ BabbageTxOut era
+  , TxWits era ~ AlonzoTxWits era
   , Script era ~ AlonzoScript era
   , HasField "_keyDeposit" (PParams era) Coin
   , HasField "_poolDeposit" (PParams era) Coin
@@ -90,10 +101,12 @@ instance
   , HasField "_protocolVersion" (PParams era) ProtVer
   , Embed (EraRule "PPUP" era) (BabbageUTXOS era)
   , Environment (EraRule "PPUP" era) ~ PpupEnv era
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , Signal (EraRule "PPUP" era) ~ Maybe (Update era)
-  , ToCBOR (PredicateFailure (EraRule "PPUP" era)) -- Serializing the PredicateFailure
-  , ProtVerAtMost era 8
+  , State (EraRule "PPUP" era) ~ PPUPState era
+  , ToCBOR (PPUPPredFailure era) -- Serializing the PredicateFailure
+  , Eq (PPUPPredFailure era)
+  , Show (PPUPPredFailure era)
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   STS (BabbageUTXOS era)
   where
@@ -108,7 +121,7 @@ instance
 instance
   ( Era era
   , STS (ShelleyPPUP era)
-  , PredicateFailure (EraRule "PPUP" era) ~ ShelleyPpupPredFailure era
+  , PPUPPredFailure era ~ ShelleyPpupPredFailure era
   , Event (EraRule "PPUP" era) ~ Event (ShelleyPPUP era)
   ) =>
   Embed (ShelleyPPUP era) (BabbageUTXOS era)
@@ -124,16 +137,20 @@ utxosTransition ::
   , EraUTxO era
   , ScriptsNeeded era ~ AlonzoScriptsNeeded era
   , Tx era ~ AlonzoTx era
+  , TxOut era ~ BabbageTxOut era
+  , TxWits era ~ AlonzoTxWits era
   , Script era ~ AlonzoScript era
   , HasField "_keyDeposit" (PParams era) Coin
   , HasField "_poolDeposit" (PParams era) Coin
   , HasField "_costmdls" (PParams era) CostModels
   , Environment (EraRule "PPUP" era) ~ PpupEnv era
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , Signal (EraRule "PPUP" era) ~ Maybe (Update era)
   , Embed (EraRule "PPUP" era) (BabbageUTXOS era)
-  , ToCBOR (PredicateFailure (EraRule "PPUP" era))
-  , ProtVerAtMost era 8
+  , State (EraRule "PPUP" era) ~ PPUPState era
+  , ToCBOR (PPUPPredFailure era)
+  , Eq (PPUPPredFailure era)
+  , Show (PPUPPredFailure era)
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   TransitionRule (BabbageUTXOS era)
 utxosTransition =
@@ -154,13 +171,13 @@ scriptsYes ::
   , Script era ~ AlonzoScript era
   , STS (BabbageUTXOS era)
   , Environment (EraRule "PPUP" era) ~ PpupEnv era
-  , State (EraRule "PPUP" era) ~ PPUPState era
   , Signal (EraRule "PPUP" era) ~ Maybe (Update era)
   , Embed (EraRule "PPUP" era) (BabbageUTXOS era)
+  , State (EraRule "PPUP" era) ~ PPUPState era
   , HasField "_poolDeposit" (PParams era) Coin
   , HasField "_keyDeposit" (PParams era) Coin
   , HasField "_costmdls" (PParams era) CostModels
-  , ProtVerAtMost era 8
+  , PPUPStateOrUnit era ~ PPUPState era
   ) =>
   TransitionRule (BabbageUTXOS era)
 scriptsYes = do
@@ -181,7 +198,7 @@ scriptsYes = do
   ppup' <-
     trans @(EraRule "PPUP" era) $
       TRC
-        (PPUPEnv slot pp genDelegs, pup, strictMaybeToMaybe $ txBody ^. updateTxBodyL)
+        (PPUPEnv slot pp genDelegs, pup, strictMaybeToMaybe $ txBody ^. updateTxBodyG)
 
   let !_ = traceEvent validBegin ()
 
@@ -213,6 +230,7 @@ scriptsNo ::
   , STS (BabbageUTXOS era)
   , BabbageEraTxBody era
   , Tx era ~ AlonzoTx era
+  , TxOut era ~ BabbageTxOut era
   , Script era ~ AlonzoScript era
   , HasField "_costmdls" (PParams era) CostModels
   ) =>
@@ -247,8 +265,8 @@ scriptsNo = do
       collateralFees = collAdaBalance txBody utxoDel -- NEW to Babbage
   pure $!
     us {- (collInputs txb ⋪ utxo) ∪ collouts tx -}
-      { utxosUtxo = UTxO (Map.union utxoKeep collouts) -- NEW to Babbage
+      { sutxosUtxo = UTxO (Map.union utxoKeep collouts) -- NEW to Babbage
       {- fees + collateralFees -}
-      , utxosFees = fees <> collateralFees -- NEW to Babbage
-      , utxosStakeDistr = updateStakeDistribution (utxosStakeDistr us) (UTxO utxoDel) (UTxO collouts)
+      , sutxosFees = fees <> collateralFees -- NEW to Babbage
+      , sutxosStakeDistr = updateStakeDistribution (sutxosStakeDistr us) (UTxO utxoDel) (UTxO collouts)
       }

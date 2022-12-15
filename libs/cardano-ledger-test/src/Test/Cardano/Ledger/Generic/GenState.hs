@@ -691,10 +691,10 @@ instance era ~ BabbageEra Mock => Show (GenState era) where
 -- logically be applied one after another)
 
 initialLedgerState :: forall era. Reflect era => GenState era -> LedgerState era
-initialLedgerState gstate = LedgerState utxostate dpstate
+initialLedgerState gstate = LedgerState sutxostate dpstate
   where
     umap = UM.unify (gsInitialRewards gstate) (gsInitialDelegations gstate) Map.empty
-    utxostate = smartUTxOState (UTxO (gsInitialUtxo gstate)) deposited (Coin 0) (pPUPStateZero @era)
+    sutxostate = smartUTxOState (UTxO (gsInitialUtxo gstate)) deposited (Coin 0) (pPUPStateZero @era)
     dpstate = DPState dstate pstate
     dstate =
       DState

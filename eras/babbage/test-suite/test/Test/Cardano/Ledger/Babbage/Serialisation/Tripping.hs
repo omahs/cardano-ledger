@@ -23,27 +23,27 @@ tests =
   testGroup
     "Babbage CBOR round-trip"
     [ testProperty "babbage/Script" $
-        roundTripAnnExpectation @(Script Babbage)
+        roundTripAnnExpectation @(Script Babbage) v
     , testProperty "babbage/Metadata" $
-        roundTripAnnExpectation @(TxAuxData Babbage)
+        roundTripAnnExpectation @(ShelleyTxAuxData Babbage) v
     , testProperty "babbage/TxOut" $
-        roundTripCborExpectation @(TxOut Babbage)
+        roundTripCborExpectation @(TxOut Babbage) v
     , testProperty "babbage/TxBody" $
-        roundTripAnnExpectation @(TxBody Babbage)
+        roundTripAnnExpectation @(TxBody Babbage) v
     , testProperty "babbage/CostModel" $
-        roundTripCborExpectation @CostModels
+        roundTripCborExpectation @CostModels v
     , testProperty "babbage/PParams" $
-        roundTripCborExpectation @(PParams Babbage)
+        roundTripCborExpectation @(PParams Babbage) v
     , testProperty "babbage/PParamsUpdate" $
-        roundTripCborExpectation @(PParamsUpdate Babbage)
+        roundTripCborExpectation @(PParamsUpdate Babbage) v
     , testProperty "babbage/AuxiliaryData" $
-        roundTripAnnExpectation @(TxAuxData Babbage)
+        roundTripAnnExpectation @(TxAuxData Babbage) v
     , testProperty "Script" $
-        roundTripAnnExpectation @(Script Babbage)
+        roundTripAnnExpectation @(Script Babbage) v
     , testProperty "babbage/Tx" $
-        roundTripAnnExpectation @(Tx Babbage)
+        roundTripAnnExpectation @(Tx Babbage) v
     , testProperty "babbage/BabbageUtxoPredFailure" $
-        roundTripCborExpectation @(BabbageUtxoPredFailure Babbage)
+        roundTripCborExpectation @(BabbageUtxoPredFailure Babbage) v
     , testProperty "babbage/Block" $
-        roundTripAnnExpectation @(Block (BHeader StandardCrypto) Babbage)
+        roundTripAnnExpectation @(Block (BHeader StandardCrypto) Babbage) v
     ]

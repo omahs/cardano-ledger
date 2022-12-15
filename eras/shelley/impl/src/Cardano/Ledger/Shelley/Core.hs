@@ -38,6 +38,10 @@ class EraTxBody era => ShelleyEraTxBody era where
 
   updateTxBodyL :: ProtVerAtMost era 8 => Lens' (TxBody era) (StrictMaybe (Update era))
 
+  updateTxBodyG :: SimpleGetter (TxBody era) (StrictMaybe (Update era))
+  default updateTxBodyG :: ProtVerAtMost era 8 => SimpleGetter (TxBody era) (StrictMaybe (Update era))
+  updateTxBodyG = updateTxBodyL
+
   certsTxBodyL :: ProtVerAtMost era 8 => Lens' (TxBody era) (StrictSeq (DCert (EraCrypto era)))
 
   certsTxBodyG :: SimpleGetter (TxBody era) (StrictSeq (DCert (EraCrypto era)))

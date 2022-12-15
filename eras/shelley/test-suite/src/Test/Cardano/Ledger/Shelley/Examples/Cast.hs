@@ -54,6 +54,7 @@ import Cardano.Ledger.Credential (
 import qualified Cardano.Ledger.Crypto as CC (Crypto)
 import Cardano.Ledger.Keys (
   Hash,
+  KeyPair (..),
   KeyRole (..),
   VerKeyVRF,
   hashKey,
@@ -76,6 +77,7 @@ import Test.Cardano.Ledger.Shelley.Generator.Core (
  )
 import Test.Cardano.Ledger.Shelley.Utils (
   RawSeed (..),
+  mkAddr,
   mkKESKeyPair,
   mkKeyPair,
   mkVRFKeyPair,

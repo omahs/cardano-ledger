@@ -35,17 +35,12 @@ module Cardano.Ledger.Babbage.TxOut (
   txOutData,
   txOutDataHash,
   txOutScript,
+  fromCborTxOutWithAddr,
 )
 where
 
-import Cardano.Crypto.Hash (HashAlgorithm)
-import Cardano.Ledger.Address (
-  Addr (..),
-  CompactAddr,
-  compactAddr,
-  decompactAddr,
-  fromCborBothAddr,
- )
+import Cardano.Crypto.Hash
+import Cardano.Ledger.Address (Addr (..))
 import Cardano.Ledger.Alonzo.Data (
   BinaryData,
   Data,
@@ -95,6 +90,12 @@ import Cardano.Ledger.Binary (
  )
 import Cardano.Ledger.Binary.Coders
 import Cardano.Ledger.Coin (Coin (..))
+import Cardano.Ledger.CompactAddress (
+  CompactAddr,
+  compactAddr,
+  decompactAddr,
+  fromCborBackwardsBothAddr,
+ )
 import Cardano.Ledger.Compactible
 import Cardano.Ledger.Core hiding (TxBody, TxOut)
 import qualified Cardano.Ledger.Core as Core (TxOut)

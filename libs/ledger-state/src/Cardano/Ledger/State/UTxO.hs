@@ -121,7 +121,7 @@ totalADA = foldMap (^. valueTxOutL)
 readBinUTxO :: FilePath -> IO (UTxO CurrentEra)
 readBinUTxO fp = do
   ls <- readNewEpochState fp
-  pure $! utxosUtxo $ lsUTxOState $ esLState $ nesEs ls
+  pure $! sutxosUtxo $ lsUTxOState $ esLState $ nesEs ls
 
 newtype Count = Count Int
   deriving (Eq, Ord, Enum, Real, Integral, Num, Pretty)
@@ -499,7 +499,7 @@ instance AggregateStat LedgerStateStats where
 countLedgerStateStats :: LedgerState CurrentEra -> LedgerStateStats
 countLedgerStateStats LedgerState {..} =
   LedgerStateStats
-    { lssUTxOStats = countUTxOStats (utxosUtxo lsUTxOState)
+    { lssUTxOStats = countUTxOStats (sutxosUtxo lsUTxOState)
     , lssDStateStats = countDStateStats (dpsDState lsDPState)
     , lssPStateStats = countPStateStats (dpsPState lsDPState)
     }

@@ -35,49 +35,49 @@ tests =
   testGroup
     "Alonzo CBOR round-trip"
     [ testProperty "alonzo/Script" $
-        roundTripAnnExpectation @(Script Alonzo)
+        roundTripAnnExpectation @(Script Alonzo) v
     , skip $
         testProperty "alonzo/Script twiddled" $
-          roundTripAnnTwiddledProperty @(Script Alonzo) eqAlonzoScriptRaw
+          roundTripAnnTwiddledProperty @(Script Alonzo) eqAlonzoScriptRaw v
     , testProperty "alonzo/Data" $
-        roundTripAnnExpectation @(Data Alonzo)
+        roundTripAnnExpectation @(Data Alonzo) v
     , skip $
         testProperty "alonzo/Data twiddled" $
-          roundTripAnnTwiddledProperty @(Data Alonzo) (zipMemoRawType (===))
+          roundTripAnnTwiddledProperty @(Data Alonzo) (zipMemoRawType (===)) v
     , testProperty "alonzo/BinaryData" $
-        roundTripCborExpectation @(BinaryData Alonzo)
+        roundTripCborExpectation @(BinaryData Alonzo) v
     , skip $
         testProperty "alonzo/BinaryData twiddled" $
-          roundTripTwiddledProperty @(BinaryData Alonzo)
+          roundTripTwiddledProperty @(BinaryData Alonzo) v
     , testProperty "alonzo/TxAuxData" $
-        roundTripAnnExpectation @(ShelleyTxAuxData Alonzo)
+        roundTripAnnExpectation @(ShelleyTxAuxData Alonzo) v
     , testProperty "alonzo/AlonzoTxWits" $
-        roundTripAnnExpectation @(AlonzoTxWits Alonzo)
+        roundTripAnnExpectation @(AlonzoTxWits Alonzo) v
     , testProperty "alonzo/TxBody" $
-        roundTripAnnExpectation @(TxBody Alonzo)
+        roundTripAnnExpectation @(TxBody Alonzo) v
     , skip $
         testProperty "alonzo/TxBody twiddled" $
-          roundTripAnnTwiddledProperty @(TxBody Alonzo) (zipMemoRawType (===))
+          roundTripAnnTwiddledProperty @(TxBody Alonzo) (zipMemoRawType (===)) v
     , testProperty "alonzo/CostModels" $
-        roundTripCborExpectation @CostModels
+        roundTripCborExpectation @CostModels v
     , testProperty "alonzo/PParams" $
-        roundTripCborExpectation @(PParams Alonzo)
+        roundTripCborExpectation @(PParams Alonzo) v
     , testProperty "alonzo/PParamsUpdate" $
-        roundTripCborExpectation @(PParamsUpdate Alonzo)
+        roundTripCborExpectation @(PParamsUpdate Alonzo) v
     , testProperty "alonzo/AuxiliaryData" $
-        roundTripAnnExpectation @(TxAuxData Alonzo)
+        roundTripAnnExpectation @(TxAuxData Alonzo) v
     , testProperty "alonzo/AlonzoUtxowPredFailure" $
-        roundTripCborExpectation @(AlonzoUtxowPredFailure Alonzo)
+        roundTripCborExpectation @(AlonzoUtxowPredFailure Alonzo) v
     , testProperty "alonzo/AlonzoUtxoPredFailure" $
-        roundTripCborExpectation @(AlonzoUtxoPredFailure Alonzo)
+        roundTripCborExpectation @(AlonzoUtxoPredFailure Alonzo) v
     , testProperty "alonzo/AlonzoUtxosPredFailure" $
-        roundTripCborExpectation @(AlonzoUtxosPredFailure Alonzo)
+        roundTripCborExpectation @(AlonzoUtxosPredFailure Alonzo) v
     , testProperty "Script" $
-        roundTripAnnExpectation @(Script Alonzo)
+        roundTripAnnExpectation @(Script Alonzo) v
     , testProperty "alonzo/Tx" $
-        roundTripAnnExpectation @(Tx Alonzo)
+        roundTripAnnExpectation @(Tx Alonzo) v
     , testProperty "alonzo/Block" $
-        roundTripAnnExpectation @(Block (BHeader StandardCrypto) Alonzo)
+        roundTripAnnExpectation @(Block (BHeader StandardCrypto) Alonzo) v
     ]
   where
     skip _ = testProperty "Test skipped" True

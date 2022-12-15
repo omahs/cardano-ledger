@@ -29,6 +29,7 @@ import Cardano.Ledger.Shelley.LedgerState (
   DPState (..),
   DState (..),
   LedgerState (..),
+  PPUPStateOrUnit,
   UTxOState (..),
   obligationDPState,
  )
@@ -112,8 +113,7 @@ ledgerTransition = do
   pure $ LedgerState utxoSt' dpstate'
 
 instance
-  ( Show (State (EraRule "PPUP" era))
-  , DSignable (EraCrypto era) (Hash (EraCrypto era) EraIndependentTxBody)
+  ( DSignable (EraCrypto era) (Hash (EraCrypto era) EraIndependentTxBody)
   , AlonzoEraTx era
   , Tx era ~ AlonzoTx era
   , Embed (EraRule "DELEGS" era) (AlonzoLEDGER era)
@@ -127,6 +127,7 @@ instance
   , HasField "_keyDeposit" (PParams era) Coin
   , HasField "_poolDeposit" (PParams era) Coin
   , ProtVerAtMost era 8
+  , Show (PPUPStateOrUnit era)
   ) =>
   STS (AlonzoLEDGER era)
   where
@@ -155,7 +156,7 @@ instance
         "Deposit pot must equal obligation"
         ( \(TRC (_, _, _))
            (LedgerState utxoSt dpstate) ->
-              obligationDPState dpstate == utxosDeposited utxoSt
+              obligationDPState dpstate == sutxosDeposited utxoSt
         )
     ]
 
