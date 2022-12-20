@@ -37,6 +37,11 @@ library
   other-modules:
   exposed-modules:
     Test.Cardano.Ledger.Alonzo.Tools
+    Test.Cardano.Ledger.Constrained.TypeRep
+    Test.Cardano.Ledger.Constrained.Spec
+    Test.Cardano.Ledger.Constrained.Env
+    Test.Cardano.Ledger.Constrained.Monad
+    Test.Cardano.Ledger.Constrained.Combinators
     Test.Cardano.Ledger.Examples.BabbageFeatures
     Test.Cardano.Ledger.Examples.AlonzoValidTxUTXOW
     Test.Cardano.Ledger.Examples.AlonzoInvalidTxUTXOW
@@ -80,7 +85,8 @@ library
     cardano-ledger-binary:{cardano-ledger-binary,testlib},
     cardano-ledger-conway,
     cardano-ledger-conway-test,
-    cardano-ledger-core,
+    cardano-ledger-core:{cardano-ledger-core,testlib},
+    cardano-data,
     cardano-ledger-pretty,
     cardano-ledger-mary,
     cardano-ledger-shelley,

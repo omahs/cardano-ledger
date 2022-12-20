@@ -5,6 +5,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -22,7 +23,6 @@ module Test.Cardano.Ledger.Generic.Proof
     ReflectC (..),
     Reflect (..),
     Some (..),
-    Ranked (..),
     WitRule (..),
     ruleProof,
     runSTS,
@@ -73,7 +73,7 @@ import Cardano.Protocol.TPraos.BHeader (BHBody)
 import Cardano.Protocol.TPraos.OCert
 import Control.State.Transition.Extended hiding (Assertion)
 import Data.Kind (Type)
-import GHC.Natural
+import Data.Universe (Shape (..), Shaped (..), Singleton (..), Some (..), (:~:) (Refl))
 import GHC.TypeLits (Symbol)
 import Test.Cardano.Ledger.Shelley.ConcreteCryptoTypes (C_Crypto)
 import Test.Cardano.Ledger.Shelley.Utils (applySTSTest, runShelleyBase)
@@ -171,15 +171,6 @@ instance ReflectC c => Reflect (ShelleyEra c) where
 -- ===================================================
 -- Tools for building TestTrees for multiple Eras
 
-instance Eq (Some Proof) where
-  (Some (Shelley _)) == (Some (Shelley _)) = True
-  (Some (Allegra _)) == (Some (Allegra _)) = True
-  (Some (Mary _)) == (Some (Mary _)) = True
-  (Some (Alonzo _)) == (Some (Alonzo _)) = True
-  (Some (Babbage _)) == (Some (Babbage _)) = True
-  (Some (Conway _)) == (Some (Conway _)) = True
-  _ == _ = False
-
 instance Show (Some Proof) where
   show (Some (Shelley c)) = show (Shelley c)
   show (Some (Allegra c)) = show (Allegra c)
@@ -263,23 +254,6 @@ goSTS (MOCKCHAIN _proof) env state sig cont =
 -- ================================================================
 -- Crypto agnostic operations on (Proof era) via (Some Proof)
 
-data Some f where
-  Some :: f a -> Some f
-
-class Ranked t where
-  rank :: t i -> Natural
-
-instance (Eq (Some t), Ranked t) => Ord (Some t) where
-  compare (Some x) (Some y) = compare (rank x) (rank y)
-
-instance Ranked Proof where
-  rank (Shelley _) = 0
-  rank (Allegra _) = 1
-  rank (Mary _) = 2
-  rank (Alonzo _) = 3
-  rank (Babbage _) = 4
-  rank (Conway _) = 5
-
 preShelley, preAllegra, preMary, preAlonzo, preBabbage, preConway :: [Some Proof]
 preShelley = [Some (Shelley Mock)]
 preAllegra = [Some (Allegra Mock), Some (Shelley Mock)]
@@ -350,3 +324,33 @@ unReflect (Babbage Mock) f = f (Babbage Mock)
 unReflect (Babbage Standard) f = f (Babbage Standard)
 unReflect (Conway Mock) f = f (Conway Mock)
 unReflect (Conway Standard) f = f (Conway Standard)
+
+-- ======================================================
+
+instance Singleton Evidence where
+  testEql Standard Standard = Just Refl
+  testEql Mock Mock = Just Refl
+  testEql _ _ = Nothing
+  cmpIndex x y = compare (shape x) (shape y)
+
+instance Shaped Evidence any where
+  shape Standard = Nullary 0
+  shape Mock = Nullary 1
+
+instance Singleton Proof where
+  testEql (Shelley c1) (Shelley c2) = do Refl <- testEql c1 c2; Just Refl
+  testEql (Allegra c1) (Allegra c2) = do Refl <- testEql c1 c2; Just Refl
+  testEql (Mary c1) (Mary c2) = do Refl <- testEql c1 c2; Just Refl
+  testEql (Alonzo c1) (Alonzo c2) = do Refl <- testEql c1 c2; Just Refl
+  testEql (Babbage c1) (Babbage c2) = do Refl <- testEql c1 c2; Just Refl
+  testEql (Conway c1) (Conway c2) = do Refl <- testEql c1 c2; Just Refl
+  testEql _ _ = Nothing
+  cmpIndex x y = compare (shape x) (shape y)
+
+instance Shaped Proof any where
+  shape (Shelley c) = Nary 0 [shape c]
+  shape (Allegra c) = Nary 1 [shape c]
+  shape (Mary c) = Nary 2 [shape c]
+  shape (Alonzo c) = Nary 3 [shape c]
+  shape (Babbage c) = Nary 4 [shape c]
+  shape (Conway c) = Nary 5 [shape c]
