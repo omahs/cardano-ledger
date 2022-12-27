@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1672147324866,
+  "lastUpdate": 1672155635357,
   "repoUrl": "https://github.com/input-output-hk/cardano-ledger",
   "entries": {
     "Haskell Benchmark": [
@@ -23082,6 +23082,78 @@ window.BENCHMARK_DATA = {
             "value": 0.000018815853644422966,
             "unit": "Nanoseconds",
             "range": 9.730090695350025e-7
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "kostas.dermentzis@iohk.io",
+            "name": "Kostas Dermentzis",
+            "username": "kderme"
+          },
+          "committer": {
+            "email": "jaredcorduan@gmail.com",
+            "name": "Jared Corduan",
+            "username": "JaredCorduan"
+          },
+          "distinct": true,
+          "id": "e179695dd421aa9aafa44d687a33e4941295afa2",
+          "message": "Adjust Deposits event\n\nThe tx hash is used to associate the event with the tx since the events within\na block can appear out of order. The adjustment from deposits to deposits\nchange is useful for db-sync.",
+          "timestamp": "2022-12-27T10:36:37-05:00",
+          "tree_id": "4be57c8ec2b3b04eb21bc0986cd58c7435e9edd0",
+          "url": "https://github.com/input-output-hk/cardano-ledger/commit/e179695dd421aa9aafa44d687a33e4941295afa2"
+        },
+        "date": 1672155630984,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "applyTxBenchmarks/ApplyTxInEra/ShelleyEra C_Crypto",
+            "value": 0.00007366454306663221,
+            "unit": "Nanoseconds",
+            "range": 1.6818526251532367e-7
+          },
+          {
+            "name": "applyTxBenchmarks/ApplyTxInEra/AllegraEra C_Crypto",
+            "value": 0.00007516476443286769,
+            "unit": "Nanoseconds",
+            "range": 1.2958673170869826e-7
+          },
+          {
+            "name": "applyTxBenchmarks/ApplyTxInEra/MaryEra C_Crypto",
+            "value": 0.00008865053339149833,
+            "unit": "Nanoseconds",
+            "range": 1.94371000629246e-7
+          },
+          {
+            "name": "applyTxBenchmarks/ApplyTxInEra/AlonzoEra C_Crypto",
+            "value": 0.00011921164724372237,
+            "unit": "Nanoseconds",
+            "range": 2.836729616765034e-7
+          },
+          {
+            "name": "applyTxBenchmarks/Deserialise Shelley Tx/ShelleyEra C_Crypto",
+            "value": 0.000021401727993814727,
+            "unit": "Nanoseconds",
+            "range": 4.737217388385453e-8
+          },
+          {
+            "name": "applyTxBenchmarks/Deserialise Shelley Tx/AllegraEra C_Crypto",
+            "value": 0.00003655783897522915,
+            "unit": "Nanoseconds",
+            "range": 0.0000019717188082804235
+          },
+          {
+            "name": "applyTxBenchmarks/Deserialise Shelley Tx/MaryEra C_Crypto",
+            "value": 0.00003659126662070157,
+            "unit": "Nanoseconds",
+            "range": 5.0607179442252894e-8
+          },
+          {
+            "name": "applyTxBenchmarks/Deserialise Shelley Tx/AlonzoEra C_Crypto",
+            "value": 0.00001938542677825896,
+            "unit": "Nanoseconds",
+            "range": 4.6930918194792933e-8
           }
         ]
       }
