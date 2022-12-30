@@ -81,6 +81,7 @@ import Data.MapExtras (extractKeys)
 import Debug.Trace (traceEvent)
 import GHC.Records (HasField (..))
 import Lens.Micro
+import Cardano.Ledger.Alonzo.TxWits (AlonzoTxWits(..))
 
 -- =====================================================
 

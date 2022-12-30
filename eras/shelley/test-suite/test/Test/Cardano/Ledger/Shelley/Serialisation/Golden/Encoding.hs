@@ -71,7 +71,6 @@ import Cardano.Ledger.Hashes (EraIndependentTxBody)
 import Cardano.Ledger.Keys (
   Hash,
   KeyHash (..),
-  KeyPair (..),
   KeyRole (..),
   SignKeyKES,
   SignKeyVRF,
@@ -83,10 +82,8 @@ import Cardano.Ledger.Keys (
   encodeSignedKES,
   hashKey,
   hashVerKeyVRF,
-  sKey,
   signedDSIGN,
   signedKES,
-  vKey,
  )
 import Cardano.Ledger.PoolDistr (PoolDistr (..))
 import Cardano.Ledger.SafeHash (SafeHash, extractHash, hashAnnotated)

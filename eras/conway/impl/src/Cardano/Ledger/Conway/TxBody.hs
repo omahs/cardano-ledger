@@ -116,6 +116,7 @@ import Data.Typeable (Typeable)
 import GHC.Generics (Generic)
 import Lens.Micro (to, (^.))
 import NoThunks.Class (NoThunks)
+import Cardano.Ledger.Val (Val, DecodeNonNegative)
 
 instance Memoized ConwayTxBody where
   type RawType ConwayTxBody = ConwayTxBodyRaw

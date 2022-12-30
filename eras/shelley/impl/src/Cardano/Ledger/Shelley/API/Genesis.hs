@@ -6,7 +6,7 @@
 module Cardano.Ledger.Shelley.API.Genesis where
 
 import Cardano.Ledger.BaseTypes (BlocksMade (..))
-import Cardano.Ledger.Core (EraTxOut, PParams)
+import Cardano.Ledger.Core (EraTxOut, PParams, EraRule)
 import Cardano.Ledger.Crypto (Crypto)
 import Cardano.Ledger.EpochBoundary (emptySnapShots)
 import Cardano.Ledger.Shelley (ShelleyEra)
@@ -33,6 +33,7 @@ import Cardano.Ledger.Val (Val ((<->)))
 import Data.Default.Class (Default, def)
 import Data.Kind (Type)
 import qualified Data.Map.Strict as Map
+import Control.State.Transition.Extended (STS(..))
 
 -- | Indicates that this era may be bootstrapped from 'ShelleyGenesis'.
 class CanStartFromGenesis era where

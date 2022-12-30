@@ -17,7 +17,6 @@ import qualified Cardano.Crypto.VRF as VRF
 import Cardano.Ledger.Address (
   Addr (..),
   getRwdCred,
-  mkVKeyRwdAcnt,
  )
 import Cardano.Ledger.BaseTypes hiding ((==>))
 import Cardano.Ledger.Binary (serialize')

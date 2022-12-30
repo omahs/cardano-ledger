@@ -59,8 +59,7 @@ module Cardano.Ledger.Shelley.TxBody (
   -- * Helpers
   addrEitherShelleyTxOutL,
   valueEitherShelleyTxOutL,
-)
-where
+) where
 
 import Cardano.Ledger.Address (RewardAcnt (..))
 import Cardano.Ledger.AuxiliaryData (AuxiliaryDataHash)
@@ -85,6 +84,7 @@ import Cardano.Ledger.Binary.Coders (
   (!>),
  )
 import Cardano.Ledger.Coin (Coin (..))
+import Cardano.Ledger.Compactible (Compactible (..))
 import Cardano.Ledger.Credential (Ptr (..))
 import Cardano.Ledger.Crypto (Crypto, StandardCrypto)
 import Cardano.Ledger.Keys (KeyHash (..), KeyRole (..))
@@ -121,6 +121,7 @@ import Cardano.Ledger.Shelley.TxOut (
  )
 import Cardano.Ledger.Slot (SlotNo (..))
 import Cardano.Ledger.TxIn (TxIn)
+import Cardano.Ledger.Val (DecodeNonNegative)
 import Control.DeepSeq (NFData)
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Map.Strict as Map
@@ -137,7 +138,7 @@ import NoThunks.Class (NoThunks (..))
 
 data ShelleyTxBodyRaw era = ShelleyTxBodyRaw
   { stbrInputs :: !(Set (TxIn (EraCrypto era)))
-  , stbrOutputs :: !(StrictSeq (ShelleyTxOut era))
+  , stbrOutputs :: !(StrictSeq (TxOut era))
   , stbrCerts :: !(StrictSeq (DCert (EraCrypto era)))
   , stbrWdrls :: !(Wdrl (EraCrypto era))
   , stbrTxFee :: !Coin
@@ -156,11 +157,20 @@ deriving instance
   NFData (ShelleyTxBodyRaw era)
 
 deriving instance
-  (Era era, Eq (TxOut era), Eq (PParamsUpdate era)) =>
+  ( Era era
+  , Eq (CompactForm (Value era))
+  , Eq (PParamsUpdate era)
+  , Eq (TxOut era)
+  ) =>
   Eq (ShelleyTxBodyRaw era)
 
 deriving instance
-  (Era era, Show (TxOut era), Show (PParamsUpdate era)) =>
+  ( Compactible (Value era)
+  , Show (Value era)
+  , Era era
+  , Show (PParamsUpdate era)
+  , Show (TxOut era)
+  ) =>
   Show (ShelleyTxBodyRaw era)
 
 instance
@@ -169,6 +179,7 @@ instance
   , DecodeNonNegative (Value era)
   , Compactible (Value era)
   , Show (Value era)
+  , FromCBOR (TxOut era)
   ) =>
   FromCBOR (ShelleyTxBodyRaw era)
   where
@@ -187,6 +198,7 @@ instance
   , DecodeNonNegative (Value era)
   , Compactible (Value era)
   , Show (Value era)
+  , FromCBOR (TxOut era)
   ) =>
   FromCBOR (Annotator (ShelleyTxBodyRaw era))
   where
@@ -203,9 +215,7 @@ instance
 boxBody ::
   ( Era era
   , FromCBOR (PParamsUpdate era)
-  , DecodeNonNegative (Value era)
-  , Compactible (Value era)
-  , Show (Value era)
+  , FromCBOR (TxOut era)
   ) =>
   Word ->
   Field (ShelleyTxBodyRaw era)
@@ -223,9 +233,12 @@ boxBody n = invalidField n
 --   serialisation. boxBody and txSparse should be Duals, visually inspect
 --   The key order looks strange but was choosen for backward compatibility.
 txSparse ::
-  (Era era, ToCBOR (TxOut era), ToCBOR (PParamsUpdate era)) =>
+  ( Era era
+  , ToCBOR (PParamsUpdate era)
+  , ToCBOR (TxOut era)
+  ) =>
   ShelleyTxBodyRaw era ->
-  Encode ('Closed 'Sparse) (ShelleyTxBodyRaw era)
+  Encode ( 'Closed 'Sparse) (ShelleyTxBodyRaw era)
 txSparse (ShelleyTxBodyRaw input output cert wdrl fee ttl update hash) =
   Keyed (\i o f t c w u h -> ShelleyTxBodyRaw i o c w f t u h)
     !> Key 0 (To input) -- We don't have to send these in ShelleyTxBodyRaw order
@@ -253,7 +266,11 @@ basicShelleyTxBodyRaw =
     }
 
 instance
-  (Era era, ToCBOR (TxOut era), ToCBOR (PParamsUpdate era)) =>
+  ( Era era
+  , ToCBOR (TxOut era)
+  , ToCBOR (PParamsUpdate era)
+  , ToCBOR (CompactForm (Value era))
+  ) =>
   ToCBOR (ShelleyTxBodyRaw era)
   where
   toCBOR = encode . txSparse
@@ -322,7 +339,11 @@ deriving newtype instance EraTxBody era => NFData (ShelleyTxBody era)
 deriving instance EraTxBody era => Show (ShelleyTxBody era)
 
 deriving instance
-  (Era era, Eq (TxOut era), Eq (PParamsUpdate era)) =>
+  ( Eq (CompactForm (Value era))
+  , Era era
+  , Eq (PParamsUpdate era)
+  , Eq (TxOut era)
+  ) =>
   Eq (ShelleyTxBody era)
 
 deriving via
@@ -332,7 +353,7 @@ deriving via
 
 -- | Pattern for use by external users
 pattern ShelleyTxBody ::
-  EraTxOut era =>
+  (EraTxOut era) =>
   Set (TxIn (EraCrypto era)) ->
   StrictSeq (TxOut era) ->
   StrictSeq (DCert (EraCrypto era)) ->

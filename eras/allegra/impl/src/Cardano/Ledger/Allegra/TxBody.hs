@@ -17,24 +17,24 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Cardano.Ledger.Allegra.TxBody (
-  AllegraTxBody (
-    AllegraTxBody,
-    atbAuxDataHash,
-    atbCerts,
-    atbInputs,
-    atbOutputs,
-    atbTxFee,
-    atbUpdate,
-    atbValidityInterval,
-    atbWdrls
-  ),
-  AllegraEraTxBody (..),
-  emptyAllegraTxBodyRaw,
-  AllegraTxBodyRaw (..),
-  StrictMaybe (..),
-  ValidityInterval (..),
-)
+module Cardano.Ledger.Allegra.TxBody
+  ( AllegraTxBody
+      ( AllegraTxBody,
+        atbAuxDataHash,
+        atbCerts,
+        atbInputs,
+        atbOutputs,
+        atbTxFee,
+        atbUpdate,
+        atbValidityInterval,
+        atbWdrls
+      ),
+    AllegraEraTxBody (..),
+    emptyAllegraTxBodyRaw,
+    AllegraTxBodyRaw (..),
+    StrictMaybe (..),
+    ValidityInterval (..),
+  )
 where
 
 import Cardano.Ledger.Allegra.Core (AllegraEraTxBody (..))
@@ -44,40 +44,39 @@ import Cardano.Ledger.Allegra.TxOut ()
 import Cardano.Ledger.AuxiliaryData (AuxiliaryDataHash)
 import Cardano.Ledger.BaseTypes (StrictMaybe (SJust, SNothing))
 import Cardano.Ledger.Binary (Annotator, FromCBOR (..), ToCBOR (..))
-import Cardano.Ledger.Binary.Coders (
-  Decode (..),
-  Encode (..),
-  Field,
-  decode,
-  encode,
-  encodeKeyedStrictMaybe,
-  field,
-  invalidField,
-  ofield,
-  (!>),
- )
+import Cardano.Ledger.Binary.Coders
+  ( Decode (..),
+    Encode (..),
+    Field,
+    decode,
+    encode,
+    encodeKeyedStrictMaybe,
+    field,
+    invalidField,
+    ofield,
+    (!>),
+  )
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Compactible (Compactible (..))
 import Cardano.Ledger.Core
 import Cardano.Ledger.Crypto (Crypto, StandardCrypto)
-import Cardano.Ledger.MemoBytes (
-  Mem,
-  MemoBytes,
-  MemoHashIndex,
-  Memoized (RawType),
-  getMemoRawType,
-  getMemoSafeHash,
-  lensMemoRawType,
-  mkMemoized,
- )
+import Cardano.Ledger.MemoBytes
+  ( Mem,
+    MemoBytes,
+    MemoHashIndex,
+    Memoized (RawType),
+    getMemoRawType,
+    getMemoSafeHash,
+    lensMemoRawType,
+    mkMemoized,
+  )
 import Cardano.Ledger.SafeHash (HashAnnotated (..), SafeToHash)
 import Cardano.Ledger.Shelley.PParams (Update)
-import Cardano.Ledger.Shelley.TxBody (
-  DCert (..),
-  ShelleyEraTxBody (..),
-  ShelleyTxOut (..),
-  Wdrl (..),
- )
+import Cardano.Ledger.Shelley.TxBody
+  ( DCert (..),
+    ShelleyEraTxBody (..),
+    Wdrl (..),
+  )
 import Cardano.Ledger.TxIn (TxIn (..))
 import Control.DeepSeq (NFData (..))
 import qualified Data.Map.Strict as Map
@@ -90,15 +89,15 @@ import NoThunks.Class (NoThunks (..))
 -- =======================================================
 
 data AllegraTxBodyRaw ma era = AllegraTxBodyRaw
-  { atbrInputs :: !(Set (TxIn (EraCrypto era)))
-  , atbrOutputs :: !(StrictSeq (ShelleyTxOut era))
-  , atbrCerts :: !(StrictSeq (DCert (EraCrypto era)))
-  , atbrWdrls :: !(Wdrl (EraCrypto era))
-  , atbrTxFee :: !Coin
-  , atbrValidityInterval :: !ValidityInterval -- imported from Timelocks
-  , atbrUpdate :: !(StrictMaybe (Update era))
-  , atbrAuxDataHash :: !(StrictMaybe (AuxiliaryDataHash (EraCrypto era)))
-  , atbrMint :: !ma
+  { atbrInputs :: !(Set (TxIn (EraCrypto era))),
+    atbrOutputs :: !(StrictSeq (TxOut era)),
+    atbrCerts :: !(StrictSeq (DCert (EraCrypto era))),
+    atbrWdrls :: !(Wdrl (EraCrypto era)),
+    atbrTxFee :: !Coin,
+    atbrValidityInterval :: !ValidityInterval, -- imported from Timelocks
+    atbrUpdate :: !(StrictMaybe (Update era)),
+    atbrAuxDataHash :: !(StrictMaybe (AuxiliaryDataHash (EraCrypto era))),
+    atbrMint :: !ma
   }
 
 deriving instance
@@ -106,11 +105,22 @@ deriving instance
   NFData (AllegraTxBodyRaw ma era)
 
 deriving instance
-  (Era era, Eq (PParamsUpdate era), Eq (TxOut era), Eq ma) =>
+  ( Era era,
+    Eq (PParamsUpdate era),
+    Eq (TxOut era),
+    Eq ma,
+    Eq (CompactForm (Value era))
+  ) =>
   Eq (AllegraTxBodyRaw ma era)
 
 deriving instance
-  (Era era, Show (TxOut era), Show (PParamsUpdate era), Show ma) =>
+  ( Era era,
+    Show (TxOut era),
+    Show (PParamsUpdate era),
+    Show ma,
+    Show (Value era),
+    Compactible (Value era)
+  ) =>
   Show (AllegraTxBodyRaw ma era)
 
 deriving instance Generic (AllegraTxBodyRaw ma era)
@@ -205,11 +215,20 @@ instance Memoized AllegraTxBody where
   type RawType AllegraTxBody = AllegraTxBodyRaw ()
 
 deriving instance
-  (Era era, Eq (PParamsUpdate era), Eq (TxOut era)) =>
+  ( Era era,
+    Eq (PParamsUpdate era),
+    Eq (TxOut era),
+    Eq (CompactForm (Value era))
+  ) =>
   Eq (AllegraTxBody era)
 
 deriving instance
-  (Era era, Show (TxOut era), Compactible (Value era), Show (PParamsUpdate era)) =>
+  ( Era era,
+    Show (TxOut era),
+    Compactible (Value era),
+    Show (PParamsUpdate era),
+    Show (Value era)
+  ) =>
   Show (AllegraTxBody era)
 
 deriving instance Generic (AllegraTxBody era)
@@ -219,9 +238,9 @@ deriving newtype instance
   NoThunks (AllegraTxBody era)
 
 deriving newtype instance
-  ( NFData (Value era)
-  , NFData (PParamsUpdate era)
-  , Era era
+  ( NFData (PParamsUpdate era),
+    NFData (TxOut era),
+    Era era
   ) =>
   NFData (AllegraTxBody era)
 
@@ -250,25 +269,25 @@ pattern AllegraTxBody ::
   StrictMaybe (AuxiliaryDataHash (EraCrypto era)) ->
   AllegraTxBody era
 pattern AllegraTxBody
-  { atbInputs
-  , atbOutputs
-  , atbCerts
-  , atbWdrls
-  , atbTxFee
-  , atbValidityInterval
-  , atbUpdate
-  , atbAuxDataHash
+  { atbInputs,
+    atbOutputs,
+    atbCerts,
+    atbWdrls,
+    atbTxFee,
+    atbValidityInterval,
+    atbUpdate,
+    atbAuxDataHash
   } <-
   ( getMemoRawType ->
       AllegraTxBodyRaw
-        { atbrInputs = atbInputs
-        , atbrOutputs = atbOutputs
-        , atbrCerts = atbCerts
-        , atbrWdrls = atbWdrls
-        , atbrTxFee = atbTxFee
-        , atbrValidityInterval = atbValidityInterval
-        , atbrUpdate = atbUpdate
-        , atbrAuxDataHash = atbAuxDataHash
+        { atbrInputs = atbInputs,
+          atbrOutputs = atbOutputs,
+          atbrCerts = atbCerts,
+          atbrWdrls = atbWdrls,
+          atbrTxFee = atbTxFee,
+          atbrValidityInterval = atbValidityInterval,
+          atbrUpdate = atbUpdate,
+          atbrAuxDataHash = atbAuxDataHash
         }
     )
   where
@@ -283,15 +302,15 @@ pattern AllegraTxBody
       auxDataHash =
         mkMemoized $
           AllegraTxBodyRaw
-            { atbrInputs = inputs
-            , atbrOutputs = outputs
-            , atbrCerts = certs
-            , atbrWdrls = wdrls
-            , atbrTxFee = txFee
-            , atbrValidityInterval = validityInterval
-            , atbrUpdate = update
-            , atbrAuxDataHash = auxDataHash
-            , atbrMint = ()
+            { atbrInputs = inputs,
+              atbrOutputs = outputs,
+              atbrCerts = certs,
+              atbrWdrls = wdrls,
+              atbrTxFee = txFee,
+              atbrValidityInterval = validityInterval,
+              atbrUpdate = update,
+              atbrAuxDataHash = auxDataHash,
+              atbrMint = ()
             }
 
 {-# COMPLETE AllegraTxBody #-}

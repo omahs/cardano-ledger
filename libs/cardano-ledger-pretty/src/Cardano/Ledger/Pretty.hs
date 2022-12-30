@@ -55,7 +55,6 @@ import Cardano.Ledger.Compactible (Compactible (..))
 import Cardano.Ledger.Core (
   Era,
   EraPParams (..),
-  EraRule,
   EraScript (..),
   EraTx (..),
   EraTxAuxData (..),
@@ -85,7 +84,6 @@ import Cardano.Ledger.Keys (
   GenDelegPair (..),
   GenDelegs (..),
   KeyHash (..),
-  KeyPair (..),
   KeyRole (Staking),
   VKey (..),
   VerKeyKES,
@@ -1130,8 +1128,10 @@ ppDCert (DCertGenesis x) = ppSexp "DCertGenesis" [ppConstitutionalDelegCert x]
 ppDCert (DCertMir x) = ppSexp "DCertMir" [ppMIRCert x]
 
 ppTxBody ::
-  (Era era, PrettyA (TxOut era)) =>
-  PrettyA (PParamsUpdate era) =>
+  ( EraTxOut era
+  , PrettyA (PParamsUpdate era)
+  , PrettyA (TxOut era)
+  ) =>
   ShelleyTxBody era ->
   PDoc
 ppTxBody (TxBodyConstr (Memo (ShelleyTxBodyRaw ins outs cs wdrls fee ttl upd mdh) _)) =
@@ -1198,7 +1198,11 @@ instance PrettyA (DCert c) where
   prettyA = ppDCert
 
 instance
-  (PrettyA (TxOut era), PrettyA (PParamsUpdate era), Era era) =>
+  ( EraTxOut era
+  , PrettyA (PParamsUpdate era)
+  , PrettyA (TxOut era)
+  , Era era
+  ) =>
   PrettyA (ShelleyTxBody era)
   where
   prettyA = ppTxBody

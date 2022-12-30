@@ -36,7 +36,7 @@ import Cardano.Ledger.Babbage.TxBody (
   AlonzoEraTxBody (..),
   BabbageEraTxBody (..),
   BabbageTxBody (..),
-  Datum (..),
+  Datum (..), BabbageTxOut (..),
  )
 import Cardano.Ledger.BaseTypes (
   Network (..),

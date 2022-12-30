@@ -111,8 +111,7 @@ deriving instance
 -------------------------------------------------------------------------------}
 
 type ShelleyBasedEra' era =
-  ( Default (State (Core.EraRule "PPUP" era))
-  , PraosCrypto (EraCrypto era)
+  ( PraosCrypto (EraCrypto era)
   )
 
 defaultShelleyLedgerExamples ::
@@ -174,7 +173,7 @@ defaultShelleyLedgerExamples mkWitnesses mkAlonzoTx value txBody auxData transla
 
 exampleShelleyLedgerBlock ::
   forall era.
-  (EraSegWits era, ShelleyBasedEra' era) =>
+  (EraSegWits era, PraosCrypto (EraCrypto era)) =>
   Core.Tx era ->
   Block (BHeader (EraCrypto era)) era
 exampleShelleyLedgerBlock tx = Block blockHeader blockBody

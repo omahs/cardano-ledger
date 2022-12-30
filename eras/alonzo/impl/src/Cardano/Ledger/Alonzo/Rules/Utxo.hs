@@ -71,11 +71,6 @@ import Cardano.Ledger.Binary.Coders (
   (<!),
  )
 import Cardano.Ledger.Coin (Coin (unCoin), rationalToCoinViaCeiling)
-import Cardano.Ledger.CompactAddress (
-  CompactAddr,
-  isBootstrapCompactAddr,
-  isPayCredScriptCompactAddr,
- )
 import Cardano.Ledger.Core
 import Cardano.Ledger.Credential (Credential (..))
 import Cardano.Ledger.Crypto (Crypto)
@@ -89,7 +84,6 @@ import Cardano.Ledger.Rules.ValidationMode (
 import Cardano.Ledger.Shelley.LedgerState (UTxOState (UTxOState))
 import Cardano.Ledger.Shelley.LedgerState (
   PPUPPredFailure,
-  UTxOState (UTxOState),
  )
 import Cardano.Ledger.Shelley.Rules (ShelleyUtxoPredFailure, UtxoEnv (..))
 import qualified Cardano.Ledger.Shelley.Rules as Shelley

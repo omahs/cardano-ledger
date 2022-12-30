@@ -14,109 +14,90 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Cardano.Ledger.Address (
-  mkRwdAcnt,
-  mkVKeyRwdAcnt,
-  mkRwdAcnt,
-  toAddr,
-  toCred,
-  serialiseAddr,
-  deserialiseAddr,
-  Addr (..),
-  BootstrapAddress (..),
-  bootstrapAddressAttrsSize,
-  isBootstrapRedeemer,
-  getNetwork,
-  RewardAcnt (..),
-  serialiseRewardAcnt,
-  deserialiseRewardAcnt,
-  -- internals exported for testing
-  bootstrapKeyHash,
-  --  Bits
-  byron,
-  notBaseAddr,
-  isEnterpriseAddr,
-  stakeCredIsScript,
-  -- internals exported for testing
-  getAddr,
-  getKeyHash,
-  bootstrapKeyHash,
-  getPtr,
-  getRewardAcnt,
-  getScriptHash,
-  getVariableLengthWord64,
-  payCredIsScript,
-  putAddr,
-  putCredential,
-  putPtr,
-  putRewardAcnt,
-  putVariableLengthWord64,
-  -- TODO: these should live somewhere else
-  word64ToWord7s,
-  Word7 (..),
-  toWord7,
+module Cardano.Ledger.Address
+  ( mkRwdAcnt,
+    serialiseAddr,
+    deserialiseAddr,
+    Addr (..),
+    BootstrapAddress (..),
+    bootstrapAddressAttrsSize,
+    isBootstrapRedeemer,
+    getNetwork,
+    RewardAcnt (..),
+    serialiseRewardAcnt,
+    deserialiseRewardAcnt,
+    -- internals exported for testing
+    bootstrapKeyHash,
+    --  Bits
+    byron,
+    notBaseAddr,
+    isEnterpriseAddr,
+    stakeCredIsScript,
+    -- internals exported for testing
+    payCredIsScript,
+    putAddr,
+    putCredential,
+    putPtr,
+    putRewardAcnt,
+    putVariableLengthWord64,
+    -- TODO: these should live somewhere else
+    word64ToWord7s,
+    Word7 (..),
+    toWord7,
 
-  -- * Compact Address
-  fromBoostrapCompactAddress,
-  compactAddr,
-  decompactAddr,
-  CompactAddr,
-  unCompactAddr,
-  isPayCredScriptCompactAddr,
-  isBootstrapCompactAddr,
-  decodeAddr,
-  decodeAddrShort,
-  decodeAddrEither,
-  decodeAddrShortEither,
-  fromCborAddr,
-  fromCborBothAddr,
-  fromCborCompactAddr,
-  fromCborBackwardsBothAddr,
-  decodeRewardAcnt,
-  fromCborRewardAcnt,
-  Fail (..),
-  word7sToWord64,
-  Word7 (..),
-  toWord7,
-)
+    -- * Compact Address
+    fromBoostrapCompactAddress,
+    compactAddr,
+    decompactAddr,
+    CompactAddr,
+    unCompactAddr,
+    isPayCredScriptCompactAddr,
+    isBootstrapCompactAddr,
+    decodeAddr,
+    decodeAddrShort,
+    decodeAddrEither,
+    decodeAddrShortEither,
+    fromCborAddr,
+    fromCborBothAddr,
+    fromCborCompactAddr,
+    fromCborBackwardsBothAddr,
+    decodeRewardAcnt,
+    fromCborRewardAcnt,
+    Fail (..),
+  )
 where
 
 import qualified Cardano.Chain.Common as Byron
 import qualified Cardano.Crypto.Hash.Class as Hash
 import qualified Cardano.Crypto.Hashing as Byron
-import Cardano.Ledger.BaseTypes (
-  CertIx (..),
-  Network (..),
-  TxIx (..),
-  byronProtVer,
-  natVersion,
-  networkToWord8,
- )
-import Cardano.Ledger.Binary (
-  Decoder,
-  FromCBOR (..),
-  ToCBOR (..),
-  decodeFull',
-  ifDecoderVersionAtLeast,
-  serialize,
- )
-import Cardano.Ledger.Credential (
-  Credential (..),
-  PaymentCredential,
-  Ptr (..),
-  StakeReference (..),
- )
+import Cardano.Ledger.BaseTypes
+  ( CertIx (..),
+    Network (..),
+    TxIx (..),
+    byronProtVer,
+    natVersion,
+    networkToWord8,
+  )
+import Cardano.Ledger.Binary
+  ( Decoder,
+    FromCBOR (..),
+    ToCBOR (..),
+    decodeFull',
+    ifDecoderVersionAtLeast,
+    serialize,
+  )
+import Cardano.Ledger.Credential
+  ( Credential (..),
+    PaymentCredential,
+    Ptr (..),
+    StakeReference (..),
+  )
 import Cardano.Ledger.Crypto (Crypto)
 import Cardano.Ledger.Hashes (ScriptHash (..))
-import Cardano.Ledger.Keys (KeyHash (..), KeyRole (..))
-import qualified Cardano.Ledger.Crypto as CC (Crypto)
-import Cardano.Ledger.Hashes (ScriptHash (..))
-import Cardano.Ledger.Keys (
-  KeyHash (..),
-  KeyPair (..),
-  KeyRole (..),
-  hashKey,
- )
+import Cardano.Ledger.Keys
+  ( KeyHash (..),
+    KeyRole (..),
+  )
 import Cardano.Ledger.Slot (SlotNo (..))
 import Cardano.Ledger.TreeDiff (ToExpr (toExpr), defaultExprViaShow)
 import Cardano.Prelude (unsafeShortByteStringIndex)
@@ -195,16 +176,16 @@ instance NoThunks (Addr c)
 
 -- | An account based address for rewards
 data RewardAcnt c = RewardAcnt
-  { getRwdNetwork :: !Network
-  , getRwdCred :: !(Credential 'Staking c)
+  { getRwdNetwork :: !Network,
+    getRwdCred :: !(Credential 'Staking c)
   }
   deriving (Show, Eq, Generic, Ord, NFData, ToJSONKey, FromJSONKey)
 
 instance Crypto c => ToJSON (RewardAcnt c) where
   toJSON ra =
     Aeson.object
-      [ "network" .= getRwdNetwork ra
-      , "credential" .= getRwdCred ra
+      [ "network" .= getRwdNetwork ra,
+        "credential" .= getRwdCred ra
       ]
 
 instance Crypto c => FromJSON (RewardAcnt c) where
@@ -212,9 +193,9 @@ instance Crypto c => FromJSON (RewardAcnt c) where
     Aeson.withObject "RewardAcnt" $ \obj ->
       RewardAcnt
         <$> obj
-          .: "network"
+        .: "network"
         <*> obj
-          .: "credential"
+        .: "credential"
 
 instance NoThunks (RewardAcnt c)
 

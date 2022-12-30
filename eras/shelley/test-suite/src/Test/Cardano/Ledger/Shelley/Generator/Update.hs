@@ -38,18 +38,9 @@ import Cardano.Ledger.BaseTypes (
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core
 import Cardano.Ledger.Era (EraCrypto)
-import Cardano.Ledger.Keys (
-  GenDelegPair (..),
-  GenDelegs (..),
-  KeyHash,
-  KeyRole (..),
-  asWitness,
-  hashKey,
-  vKey,
- )
 import Cardano.Ledger.Shelley.API (
   ProposedPPUpdates,
-  Update,
+  Update, KeyHash (..), KeyRole (..), GenDelegs (..), GenDelegPair (..),
  )
 import Cardano.Ledger.Shelley.LedgerState (
   DPState (..),
@@ -91,6 +82,7 @@ import Test.Cardano.Ledger.Shelley.Utils (
  )
 import Test.QuickCheck (Gen, choose, frequency)
 import qualified Test.QuickCheck as QC
+import Cardano.Ledger.Keys (asWitness, hashKey)
 
 -- ====================================
 

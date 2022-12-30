@@ -104,8 +104,7 @@ module Cardano.Ledger.Babbage.TxBody (
   txOutData,
   txOutDataHash,
   txOutScript,
-)
-where
+) where
 
 import Cardano.Ledger.Allegra.Scripts (ValidityInterval (..))
 import Cardano.Ledger.Alonzo.Data (
@@ -134,18 +133,10 @@ import Cardano.Ledger.Binary (
   FromCBOR (..),
   Sized (..),
   ToCBOR (..),
-  decodeMap,
-  decodeSized,
-  decodeStrictSeq,
   mkSized,
  )
 import Cardano.Ledger.Binary.Coders
-import Cardano.Ledger.Coin (Coin (..))
-import Cardano.Ledger.CompactAddress (
-  fromCborBothAddr,
-  fromCborRewardAcnt,
- )
-import Cardano.Ledger.Compactible
+import Cardano.Ledger.Coin (Coin (..), CompactForm)
 import Cardano.Ledger.Core
 import Cardano.Ledger.Crypto
 import Cardano.Ledger.Keys (KeyHash (..), KeyRole (..))
@@ -169,6 +160,7 @@ import Cardano.Ledger.Shelley.Delegation.Certificates (DCert)
 import Cardano.Ledger.Shelley.PParams (Update)
 import Cardano.Ledger.Shelley.TxBody (Wdrl (Wdrl), unWdrl)
 import Cardano.Ledger.TxIn (TxIn (..))
+import Cardano.Ledger.Val (DecodeNonNegative, Val)
 import Control.DeepSeq (NFData)
 import Data.Sequence.Strict (StrictSeq, (|>))
 import qualified Data.Sequence.Strict as StrictSeq
@@ -188,8 +180,8 @@ data BabbageTxBodyRaw era = BabbageTxBodyRaw
   { btbrSpendInputs :: !(Set (TxIn (EraCrypto era)))
   , btbrCollateralInputs :: !(Set (TxIn (EraCrypto era)))
   , btbrReferenceInputs :: !(Set (TxIn (EraCrypto era)))
-  , btbrOutputs :: !(StrictSeq (Sized (BabbageTxOut era)))
-  , btbrCollateralReturn :: !(StrictMaybe (Sized (BabbageTxOut era)))
+  , btbrOutputs :: !(StrictSeq (Sized (TxOut era)))
+  , btbrCollateralReturn :: !(StrictMaybe (Sized (TxOut era)))
   , btbrTotalCollateral :: !(StrictMaybe Coin)
   , btbrCerts :: !(StrictSeq (DCert (EraCrypto era)))
   , btbrWdrls :: !(Wdrl (EraCrypto era))
@@ -211,7 +203,12 @@ data BabbageTxBodyRaw era = BabbageTxBodyRaw
 type instance MemoHashIndex BabbageTxBodyRaw = EraIndependentTxBody
 
 deriving instance
-  (Era era, Eq (TxOut era), Eq (PParamsUpdate era)) =>
+  ( Era era
+  , Eq (TxOut era)
+  , Eq (PParamsUpdate era)
+  , Eq (Script era)
+  , Eq (CompactForm (Value era))
+  ) =>
   Eq (BabbageTxBodyRaw era)
 
 instance
@@ -223,7 +220,13 @@ instance
   NFData (BabbageTxBodyRaw era)
 
 deriving instance
-  (Era era, Show (TxOut era), Show (PParamsUpdate era)) =>
+  ( Era era
+  , Show (TxOut era)
+  , Show (PParamsUpdate era)
+  , Show (Value era)
+  , Show (Script era)
+  , Val (Value era)
+  ) =>
   Show (BabbageTxBodyRaw era)
 
 newtype BabbageTxBody era = TxBodyConstr (MemoBytes BabbageTxBodyRaw era)
@@ -244,7 +247,7 @@ inputsBabbageTxBodyL =
 {-# INLINEABLE inputsBabbageTxBodyL #-}
 
 outputsBabbageTxBodyL ::
-  forall era. BabbageEraTxBody era => Lens' (BabbageTxBody era) (StrictSeq (TxOut era))
+  forall era. (BabbageEraTxBody era, TxOut era ~ BabbageTxOut era) => Lens' (BabbageTxBody era) (StrictSeq (TxOut era))
 outputsBabbageTxBodyL =
   lensMemoRawType (fmap sizedValue . btbrOutputs) $
     \txBodyRaw outputs -> txBodyRaw {btbrOutputs = mkSized (eraProtVerLow @era) <$> outputs}
@@ -336,7 +339,7 @@ networkIdBabbageTxBodyL =
 {-# INLINEABLE networkIdBabbageTxBodyL #-}
 
 sizedOutputsBabbageTxBodyL ::
-  BabbageEraTxBody era =>
+  (BabbageEraTxBody era, TxOut era ~ BabbageTxOut era) =>
   Lens' (BabbageTxBody era) (StrictSeq (Sized (TxOut era)))
 sizedOutputsBabbageTxBodyL =
   lensMemoRawType btbrOutputs $ \txBodyRaw outputs -> txBodyRaw {btbrOutputs = outputs}
@@ -358,7 +361,7 @@ totalCollateralBabbageTxBodyL =
 
 collateralReturnBabbageTxBodyL ::
   forall era.
-  BabbageEraTxBody era =>
+  (BabbageEraTxBody era, TxOut era ~ BabbageTxOut era) =>
   Lens' (BabbageTxBody era) (StrictMaybe (TxOut era))
 collateralReturnBabbageTxBodyL =
   lensMemoRawType (fmap sizedValue . btbrCollateralReturn) $
@@ -367,7 +370,7 @@ collateralReturnBabbageTxBodyL =
 {-# INLINEABLE collateralReturnBabbageTxBodyL #-}
 
 sizedCollateralReturnBabbageTxBodyL ::
-  BabbageEraTxBody era =>
+  (BabbageEraTxBody era, TxOut era ~ BabbageTxOut era) =>
   Lens' (BabbageTxBody era) (StrictMaybe (Sized (TxOut era)))
 sizedCollateralReturnBabbageTxBodyL =
   lensMemoRawType btbrCollateralReturn $
@@ -477,7 +480,12 @@ instance Crypto c => BabbageEraTxBody (BabbageEra c) where
   {-# INLINE allSizedOutputsTxBodyF #-}
 
 deriving newtype instance
-  (Era era, Eq (TxOut era), Eq (PParamsUpdate era)) =>
+  ( Era era
+  , Eq (TxOut era)
+  , Eq (PParamsUpdate era)
+  , Eq (Script era)
+  , Eq (CompactForm (Value era))
+  ) =>
   Eq (BabbageTxBody era)
 
 deriving instance
@@ -485,7 +493,13 @@ deriving instance
   NoThunks (BabbageTxBody era)
 
 deriving instance
-  (Era era, Show (TxOut era), Show (PParamsUpdate era)) =>
+  ( Era era
+  , Show (TxOut era)
+  , Show (PParamsUpdate era)
+  , Show (Value era)
+  , Show (Script era)
+  , Val (Value era)
+  ) =>
   Show (BabbageTxBody era)
 
 deriving via
@@ -496,6 +510,7 @@ deriving via
     , DecodeNonNegative (Value era)
     , FromCBOR (PParamsUpdate era)
     , FromCBOR (Annotator (Script era))
+    , FromCBOR (TxOut era)
     ) =>
     FromCBOR (Annotator (BabbageTxBody era))
 
@@ -505,13 +520,15 @@ instance
   , DecodeNonNegative (Value era)
   , FromCBOR (PParamsUpdate era)
   , FromCBOR (Annotator (Script era))
+  , FromCBOR (TxOut era)
   ) =>
   FromCBOR (Annotator (BabbageTxBodyRaw era))
   where
   fromCBOR = pure <$> fromCBOR
 
 pattern BabbageTxBody ::
-  BabbageEraTxBody era =>
+  ( BabbageEraTxBody era
+  ) =>
   Set (TxIn (EraCrypto era)) ->
   Set (TxIn (EraCrypto era)) ->
   Set (TxIn (EraCrypto era)) ->
@@ -724,6 +741,7 @@ instance
   , DecodeNonNegative (Value era)
   , FromCBOR (Annotator (Script era))
   , FromCBOR (PParamsUpdate era)
+  , FromCBOR (TxOut era)
   ) =>
   FromCBOR (BabbageTxBodyRaw era)
   where

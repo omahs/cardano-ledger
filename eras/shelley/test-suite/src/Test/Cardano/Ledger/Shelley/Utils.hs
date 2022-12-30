@@ -24,7 +24,6 @@ module Test.Cardano.Ledger.Shelley.Utils (
   mkGenKey,
   mkKESKeyPair,
   mkVRFKeyPair,
-  mkAddr,
   runShelleyBase,
   testGlobals,
   maxKESIterations,
@@ -50,13 +49,12 @@ import Cardano.Crypto.Hash (
   hashToBytes,
  )
 import Cardano.Crypto.KES (
-  KESAlgorithm,
+  KESAlgorithm (..),
   SignKeyKES,
   VerKeyKES,
   deriveVerKeyKES,
   genKeyKES,
  )
-import Cardano.Crypto.KES.Class (ContextKES)
 import Cardano.Crypto.Seed (Seed, mkSeedFromBytes)
 import Cardano.Crypto.VRF (
   CertifiedVRF,
@@ -69,7 +67,6 @@ import Cardano.Crypto.VRF (
   genKeyVRF,
  )
 import qualified Cardano.Crypto.VRF as VRF
-import Cardano.Ledger.Address (Addr, pattern Addr)
 import Cardano.Ledger.BaseTypes (
   Globals (..),
   Network (..),
@@ -84,17 +81,7 @@ import Cardano.Ledger.Block (Block, bheader)
 import Cardano.Ledger.Coin (Coin (..))
 import Cardano.Ledger.Core
 import Cardano.Ledger.Crypto (DSIGN)
-import qualified Cardano.Ledger.Crypto as CC (Crypto)
-import Cardano.Ledger.Keys (
-  KeyPair,
-  KeyRole (..),
-  VKey (..),
-  hashKey,
-  updateKES,
-  vKey,
-  pattern KeyPair,
- )
-import Cardano.Ledger.Shelley.API (ApplyBlock)
+import Cardano.Ledger.Shelley.API (ApplyBlock, KeyRole (..), VKey (..))
 import Cardano.Ledger.Shelley.BlockChain (ShelleyTxSeq)
 import Cardano.Ledger.Shelley.LedgerState (StashedAVVMAddresses)
 import Cardano.Ledger.Shelley.Tx (ShelleyTx, ShelleyTxOut)

@@ -6,7 +6,7 @@
 module BenchUTxOAggregate where
 
 import Cardano.Ledger.Address (
-  Addr (..),
+  Addr (..), compactAddr,
  )
 import Cardano.Ledger.BaseTypes (mkTxIxPartial)
 import Cardano.Ledger.Coin (Coin (..))

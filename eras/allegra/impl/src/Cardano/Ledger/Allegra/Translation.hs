@@ -146,11 +146,11 @@ instance Crypto c => TranslateEra (AllegraEra c) UTxOState where
   translateEra ctxt us =
     return
       UTxOState
-        { sutxosUtxo = translateEra' ctxt $ utxosUtxo us
-        , sutxosDeposited = utxosDeposited us
-        , sutxosFees = utxosFees us
-        , sutxosPpups = translateEra' ctxt $ utxosPpups us
-        , sutxosStakeDistr = utxosStakeDistr us
+        { sutxosUtxo = translateEra' ctxt $ sutxosUtxo us
+        , sutxosDeposited = sutxosDeposited us
+        , sutxosFees = sutxosFees us
+        , sutxosPpups = translateEra' ctxt $ sutxosPpups us
+        , sutxosStakeDistr = sutxosStakeDistr us
         }
 
 instance Crypto c => TranslateEra (AllegraEra c) LedgerState where

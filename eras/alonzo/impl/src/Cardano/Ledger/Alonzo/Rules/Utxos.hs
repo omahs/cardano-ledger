@@ -301,7 +301,7 @@ scriptsNotValidateTransition = do
     us
       { sutxosUtxo = UTxO utxoKeep
       , sutxosFees = fees <> coinBalance (UTxO utxoDel)
-      , sutxosStakeDistr = updateStakeDistribution (utxosStakeDistr us) (UTxO utxoDel) mempty
+      , sutxosStakeDistr = updateStakeDistribution (sutxosStakeDistr us) (UTxO utxoDel) mempty
       }
 
 -- =======================================
