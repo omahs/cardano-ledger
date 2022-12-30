@@ -17,6 +17,7 @@ import Cardano.Ledger.Era (Era)
 import Cardano.Ledger.Shelley.LedgerState (EpochState (..), PPUPStateOrUnit)
 import Control.State.Transition.Extended (STS (..))
 import Data.Default (Default)
+import Data.Void (Void)
 
 instance
   ( Era era
@@ -26,7 +27,7 @@ instance
   STS (ConwayENACTMENT era)
   where
   type Environment (ConwayENACTMENT era) = ()
-  type PredicateFailure (ConwayENACTMENT era) = ()
+  type PredicateFailure (ConwayENACTMENT era) = Void
   type Signal (ConwayENACTMENT era) = EpochNo
   type State (ConwayENACTMENT era) = EpochState era
   type BaseM (ConwayENACTMENT era) = ShelleyBase
