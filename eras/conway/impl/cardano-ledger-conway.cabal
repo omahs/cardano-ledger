@@ -52,12 +52,14 @@ library
     Cardano.Ledger.Conway.UTxO
     Cardano.Ledger.Conway.Rules.Enactment
     Cardano.Ledger.Conway.Rules.Epoch
+    Cardano.Ledger.Conway.Rules.Ledger
     Cardano.Ledger.Conway.Rules.NewEpoch
     Cardano.Ledger.Conway.Rules.Tally
     Cardano.Ledger.Conway.Rules.Utxos
   build-depends:
                 aeson,
                 bytestring,
+                cardano-crypto-class,
                 cardano-ledger-binary,
                 cardano-ledger-allegra,
                 cardano-ledger-alonzo,

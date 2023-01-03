@@ -112,6 +112,7 @@ import qualified Test.Cardano.Ledger.Shelley.Examples.Consensus as SLE
 import Test.Cardano.Ledger.Shelley.Generator.Core
 import Test.Cardano.Ledger.Shelley.Orphans ()
 import Test.Cardano.Ledger.Shelley.Utils hiding (mkVRFKeyPair)
+import qualified Cardano.Ledger.Conway.Rules as Conway
 
 -- ==================================================================
 
@@ -171,7 +172,7 @@ defaultLedgerExamples proof value txBody auxData translationContext =
               Mary _ -> DelegsFailure $ DelegateeNotRegisteredDELEG @era (mkKeyHash 1)
               Alonzo _ -> DelegsFailure $ DelegateeNotRegisteredDELEG @era (mkKeyHash 1)
               Babbage _ -> DelegsFailure $ DelegateeNotRegisteredDELEG @era (mkKeyHash 1)
-              Conway _ -> DelegsFailure $ DelegateeNotRegisteredDELEG @era (mkKeyHash 1)
+              Conway _ -> Conway.DelegsFailure $ DelegateeNotRegisteredDELEG @era (mkKeyHash 1)
           ]
     , sleRewardsCredentials =
         Set.fromList

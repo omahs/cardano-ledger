@@ -54,8 +54,7 @@ import Cardano.Ledger.Shelley.API (
   Wdrl (..),
  )
 import Cardano.Ledger.Shelley.Rules (
-  ShelleyDelegsPredFailure (..),
-  ShelleyLedgerPredFailure (DelegsFailure),
+  ShelleyDelegsPredFailure (..), ShelleyDELEGS,
  )
 import Cardano.Ledger.Shelley.Tx (ShelleyTx (..))
 import Cardano.Ledger.TxIn (mkTxInPartial)
@@ -73,6 +72,8 @@ import qualified Test.Cardano.Ledger.Mary.Examples.Consensus as MarySLE
 import Test.Cardano.Ledger.Shelley.Examples.Consensus (examplePoolParams, exampleStakeKey, keyToCredential)
 import qualified Test.Cardano.Ledger.Shelley.Examples.Consensus as SLE
 import Test.Cardano.Ledger.Shelley.Orphans ()
+import Control.State.Transition.Extended (Embed(..))
+import Cardano.Ledger.Conway.Rules (ConwayLEDGER)
 
 -- ==============================================================
 
@@ -86,7 +87,7 @@ ledgerExamplesConway =
     , SLE.sleApplyTxError =
         ApplyTxError $
           pure $
-            DelegsFailure $
+            wrapFailed @(ShelleyDELEGS Conway) @(ConwayLEDGER Conway) $
               DelegateeNotRegisteredDELEG @Conway (SLE.mkKeyHash 1)
     , SLE.sleRewardsCredentials =
         Set.fromList

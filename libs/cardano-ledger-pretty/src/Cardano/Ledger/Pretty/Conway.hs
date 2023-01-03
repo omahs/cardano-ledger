@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,8 +11,7 @@
 
 module Cardano.Ledger.Pretty.Conway (
   ppConwayTxBody,
-)
-where
+) where
 
 import Cardano.Ledger.Babbage.TxBody (
   AllegraEraTxBody (..),
@@ -31,8 +31,9 @@ import Cardano.Ledger.Conway.Governance (
   VoteDecision (..),
   VoterRole (..),
  )
+import Cardano.Ledger.Conway.Rules (ConwayLedgerPredFailure (..), PredicateFailure)
 import Cardano.Ledger.Conway.TxBody (ConwayTxBody (..))
-import Cardano.Ledger.Core (EraPParams (..), EraTxBody (..), EraTxOut (..))
+import Cardano.Ledger.Core (EraPParams (..), EraRule, EraTxBody (..), EraTxOut (..))
 import Cardano.Ledger.Pretty (
   PDoc,
   PrettyA (..),
@@ -161,3 +162,14 @@ instance PrettyA (PParamsUpdate era) => PrettyA (GovernanceActionInfo era) where
 
 instance forall c. PrettyA (ConwayDCert c) where
   prettyA = prettyA . transDCert
+
+instance
+  ( PrettyA (PredicateFailure (EraRule "UTXOW" era))
+  , PrettyA (PredicateFailure (EraRule "DELEGS" era))
+  , PrettyA (PredicateFailure (EraRule "TALLY" era))
+  ) =>
+  PrettyA (ConwayLedgerPredFailure era)
+  where
+  prettyA (UtxowFailure x) = prettyA x
+  prettyA (DelegsFailure x) = prettyA x
+  prettyA (TallyFailure x) = prettyA x

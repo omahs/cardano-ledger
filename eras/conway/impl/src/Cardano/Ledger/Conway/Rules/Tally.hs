@@ -3,19 +3,27 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
 
-module Cardano.Ledger.Conway.Rules.Tally () where
+module Cardano.Ledger.Conway.Rules.Tally (
+  ConwayTALLY,
+  GovernanceProcedure (..),
+  TallyEnv (..),
+  TallyState (..),
+) where
 
 import Cardano.Ledger.BaseTypes (ShelleyBase)
 import Cardano.Ledger.Coin (Coin (..))
-import Cardano.Ledger.Conway.Era (ConwayTALLY)
+import Cardano.Ledger.Conway.Era (ConwayLEDGER, ConwayTALLY)
 import Cardano.Ledger.Conway.Governance (GovernanceAction, GovernanceActionId (..), GovernanceActionInfo (..), Vote (..), VoterRole)
-import Cardano.Ledger.Core (Era (..))
+import Cardano.Ledger.Core (Era (..), EraPParams (..))
 import Cardano.Ledger.Keys (KeyHash (..), KeyRole (..))
 import Cardano.Ledger.Shelley.Tx (TxId (..))
-import Control.State.Transition.Extended (STS (..), TRC (..), TransitionRule, judgmentContext)
+import Control.State.Transition.Extended (Embed (..), STS (..), TRC (..), TransitionRule, judgmentContext)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Sequence (Seq, ViewL (..), viewl)
@@ -28,9 +36,13 @@ data GovernanceActionState era = GovernanceActionState
   , gasAction :: !(GovernanceAction era)
   }
 
+deriving instance Show (PParamsUpdate era) => Show (GovernanceActionState era)
+
 newtype TallyState era
   = TallyState
       (Map (GovernanceActionId (EraCrypto era)) (GovernanceActionState era))
+
+deriving instance Show (PParamsUpdate era) => Show (TallyState era)
 
 newtype TallyEnv era = TallyEnv (TxId (EraCrypto era))
 
@@ -100,3 +112,12 @@ tallyTransition = do
         updateState st'' $ viewl xs
 
   updateState st . viewl $ Seq.zip govProcedures [0 ..]
+
+instance
+  ( Era era
+  , BaseM (ConwayLEDGER era) ~ ShelleyBase
+  ) =>
+  Embed (ConwayTALLY era) (ConwayLEDGER era)
+  where
+  wrapFailed = undefined
+  wrapEvent = undefined
